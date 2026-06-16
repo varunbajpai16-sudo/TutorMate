@@ -1,4 +1,4 @@
-import mongoose from 'mongoose'
+import mongoose from 'mongoose';
 
 const studentSchema = new mongoose.Schema({
   userid: {
@@ -18,6 +18,18 @@ const studentSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-})
 
-export const Student = mongoose.model('Student', studentSchema)
+  coordinates: {
+    type: {
+      type: String,
+      default: 'Point',
+      enum: ['Point'],
+    },
+    coordinates: {
+      type: [Number],
+      required: true,
+    },
+  },
+});
+studentSchema.index({ coordinates: '2dsphere' });
+export const Student = mongoose.model('Student', studentSchema);

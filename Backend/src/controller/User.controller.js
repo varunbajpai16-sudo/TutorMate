@@ -6,6 +6,7 @@ import uploadToCloudinary from '../utils/Cloudinary.util.js';
 import { Teacher } from '../models/teacher.models.js';
 import { Student } from '../models/student.models.js';
 import { Parent } from '../models/parent.models.js';
+
 const generateToken = async (userid) => {
   const user = await User.findById(userid);
 
@@ -143,6 +144,8 @@ const teacherRegistration = AsyncHandler(async (req, res) => {
     mode,
     education,
     experienceDetails,
+    latitude,
+    longitude,
   } = req.body;
 
   if (!Array.isArray(subjects) || subjects.length === 0) {
@@ -177,6 +180,10 @@ const teacherRegistration = AsyncHandler(async (req, res) => {
     mode,
     education,
     experienceDetails,
+    coordinates: {
+      type: 'Point',
+      coordinates: [longitude, latitude],
+    },
   });
 
   if (!teacher) {
@@ -189,7 +196,7 @@ const teacherRegistration = AsyncHandler(async (req, res) => {
 });
 
 const studentRegistration = AsyncHandler(async (req, res) => {
-  const { studentClass, subjects, location } = req.body;
+  const { studentClass, subjects, location, latitude, longitude } = req.body;
 
   const user = await Student.findOne({ userid: req.user._id });
 
@@ -210,6 +217,10 @@ const studentRegistration = AsyncHandler(async (req, res) => {
     subjects,
     studentClass,
     location,
+    coordinates: {
+      type: 'Point',
+      coordinates: [longitude, latitude],
+    },
   });
 
   if (!student) {
@@ -222,7 +233,7 @@ const studentRegistration = AsyncHandler(async (req, res) => {
 });
 
 const RegisterParent = AsyncHandler(async (req, res) => {
-  const { children, location } = req.body;
+  const { children, location, latitude, longitude } = req.body;
 
   if (!Array.isArray(children) || children.length === 0) {
     throw new ApiError(400, 'Children must be a non-empty array');
@@ -242,16 +253,49 @@ const RegisterParent = AsyncHandler(async (req, res) => {
     children,
     location,
     userid: req.user._id,
+    coordinates: {
+      type: 'Point',
+      coordinates: [longitude, latitude],
+    },
   });
 
   return res
     .status(201)
     .json(new Apireponse(201, 'Parent Registered Successfully', parent));
 });
+
+const getNearbyTeachers = async (req, res) => {
+  try {
+    const { latitude, longitude } = req.body;
+
+    const teachers = await Teacher.aggregate([
+      {
+        $geoNear: {
+          near: {
+            type: 'Point',
+            coordinates: [Number(longitude), Number(latitude)],
+          },
+          distanceField: 'distance',
+          maxDistance: 5000, // 5 km
+          spherical: true,
+          key: 'coordinates',
+        },
+      },
+    ]);
+
+    res.status(200).json(new Apireponse(200,"The Nearest 5 km Teachers are",teachers));
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
 export {
   createUser,
   loginUser,
   teacherRegistration,
   studentRegistration,
   RegisterParent,
+  getNearbyTeachers,
 };

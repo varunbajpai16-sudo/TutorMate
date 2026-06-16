@@ -1,4 +1,4 @@
-import mongoose from 'mongoose'
+import mongoose from 'mongoose';
 
 const teacherSchema = new mongoose.Schema({
   userid: {
@@ -31,6 +31,18 @@ const teacherSchema = new mongoose.Schema({
     default: 0,
   },
 
+  coordinates: {
+    type: {
+      type: String,
+      default: 'Point',
+      enum: ['Point'],
+    },
+    coordinates: {
+      type: [Number],
+      required: true,
+    },
+  },
+
   totalReviews: {
     type: Number,
     default: 0,
@@ -60,5 +72,9 @@ const teacherSchema = new mongoose.Schema({
       years: Number,
     },
   ],
-})
-export const Teacher = mongoose.model('Teacher', teacherSchema)
+  
+});
+
+teacherSchema.index({ coordinates: '2dsphere' });
+
+export const Teacher = mongoose.model('Teacher', teacherSchema);
