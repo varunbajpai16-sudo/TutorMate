@@ -12,6 +12,7 @@ import {
   Star,
   BookOpen,
   TrendingUp,
+  Brain
 } from "lucide-react";
 
 const PURPLE = "#6C5DD3";
@@ -90,7 +91,7 @@ export default function LoginPage() {
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 shadow-lg">
+            <div onClick={()=>navigate("/")}  className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 shadow-lg">
               <BookOpen className="h-6 w-6 text-amber-300" />
             </div>
             <div>
@@ -377,6 +378,29 @@ export default function LoginPage() {
           </div>
         </div>
       </section>
+        {/* AI Tutor Assistant Button */}
+      <button
+        onClick={() => navigate("/chatbot")}
+        className="fixed bottom-6 right-6 z-50 group"
+      >
+        <div className="relative">
+          {/* Blinking Ring */}
+          <span className="absolute inset-0 rounded-full bg-violet-500 animate-ping opacity-30"></span>
+
+          {/* Hover Text */}
+          <div className="absolute right-20 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-xl border border-violet-100 bg-white px-4 py-2 shadow-lg opacity-0 invisible translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:visible group-hover:translate-x-0">
+            <p className="text-sm font-semibold text-slate-800">
+              Talk to AI Teacher
+            </p>
+            <p className="text-xs text-slate-500">Ask doubts anytime</p>
+          </div>
+
+          {/* Button */}
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 shadow-xl transition-all duration-300 hover:scale-110">
+            <Brain className="h-8 w-8 text-amber-300" />
+          </div>
+        </div>
+      </button>
     </div>
   );
 }

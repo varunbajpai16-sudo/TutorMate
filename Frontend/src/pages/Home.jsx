@@ -1,4 +1,6 @@
 import React from "react";
+import { useState } from "react";
+import { MessageCircle } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   GraduationCap,
@@ -469,6 +471,7 @@ function HeroIllustration() {
 export default function TutorMateHomepage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [selectedSubjects, setSelectedSubjects] = useState([]);
   return (
     <div className="min-h-screen bg-white font-sans antialiased">
       {/* Header */}
@@ -550,20 +553,68 @@ export default function TutorMateHomepage() {
 
             <div className="mt-8 rounded-2xl bg-white p-5 shadow-xl shadow-indigo-100/70">
               <div className="flex flex-col gap-3 sm:flex-row">
-                <div className="flex flex-1 items-center gap-2 rounded-lg border border-slate-200 px-4 py-3">
+                <div className="relative flex flex-1 items-center gap-2 rounded-lg border border-slate-200 px-4 py-3 hover:border-violet-300 transition-colors">
                   <BookOpen className="h-4 w-4 flex-shrink-0 text-slate-400" />
-                  <span className="flex-1 text-sm text-slate-400">
-                    Select Subject
-                  </span>
-                  <ChevronDown className="h-4 w-4 flex-shrink-0 text-slate-400" />
+
+                  <select
+                    value={selectedSubjects[0] || ""}
+                    onChange={(e) =>
+                      setSelectedSubjects(
+                        e.target.value ? [e.target.value] : [],
+                      )
+                    }
+                    className="
+      w-full
+      appearance-none
+      bg-transparent
+      text-sm
+      font-medium
+      text-slate-700
+      outline-none
+      cursor-pointer
+    "
+                  >
+                    <option value="">Select Subject</option>
+
+                    {subjectList.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+
+                  <ChevronDown className="pointer-events-none absolute right-4 h-4 w-4 text-slate-400" />
                 </div>
-                <div className="flex flex-1 items-center gap-2 rounded-lg border border-slate-200 px-4 py-3">
+                <div className="relative flex flex-1 items-center gap-2 rounded-lg border border-slate-200 px-4 py-3 transition-colors hover:border-violet-300">
                   <MapPin className="h-4 w-4 flex-shrink-0 text-slate-400" />
-                  <span className="text-sm text-slate-400">Enter Location</span>
+
+                  <select
+                    className="
+      w-full
+      appearance-none
+      bg-transparent
+      text-sm
+      font-medium
+      text-slate-700
+      outline-none
+      cursor-pointer
+    "
+                  >
+                    <option value="">Select Location</option>
+                    <option value="meerut">Meerut</option>
+                    <option value="delhi">Delhi</option>
+                    <option value="noida">Noida</option>
+                    <option value="ghaziabad">Ghaziabad</option>
+                    <option value="gurgaon">Gurgaon</option>
+                    <option value="lucknow">Lucknow</option>
+                  </select>
+
+                  <ChevronDown className="pointer-events-none absolute right-4 h-4 w-4 text-slate-400" />
                 </div>
                 <button
                   className="flex items-center justify-center gap-2 whitespace-nowrap rounded-lg px-6 py-3 text-sm font-semibold text-white"
                   style={{ backgroundColor: PURPLE }}
+                  onClick={()=>navigate("/findteacher")}
                 >
                   <Search className="h-4 w-4" />
                   Search Teachers
@@ -721,6 +772,29 @@ export default function TutorMateHomepage() {
           </div>
         </div>
       </section>
+      {/* AI Tutor Assistant Button */}
+      <button
+        onClick={() => navigate("/chatbot")}
+        className="fixed bottom-6 right-6 z-50 group"
+      >
+        <div className="relative">
+          {/* Blinking Ring */}
+          <span className="absolute inset-0 rounded-full bg-violet-500 animate-ping opacity-30"></span>
+
+          {/* Hover Text */}
+          <div className="absolute right-20 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-xl border border-violet-100 bg-white px-4 py-2 shadow-lg opacity-0 invisible translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:visible group-hover:translate-x-0">
+            <p className="text-sm font-semibold text-slate-800">
+              Talk to AI Teacher
+            </p>
+            <p className="text-xs text-slate-500">Ask doubts anytime</p>
+          </div>
+
+          {/* Button */}
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 shadow-xl transition-all duration-300 hover:scale-110">
+            <Brain className="h-8 w-8 text-amber-300" />
+          </div>
+        </div>
+      </button>
     </div>
   );
 }
