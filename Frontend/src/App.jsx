@@ -13,6 +13,7 @@ import TutorMateChatbot from "./pages/Chatbot"
 import RoleSelectionPage from "./pages/RoleChoose"
 import RegisterStudentPage from "./pages/RegisterStudent"
 import RegisterParentPage from "./pages/RegisterParent"
+import ProfilePage from "./pages/UserProfile"
 function App() {
   return (
     <>
@@ -20,15 +21,16 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/findteacher" element={<FindTeachersPage />} />
         <Route path="/subjects" element={<SubjectsPage />} />
-        <Route path="/becomeateacher" element={<BecomeATeacher />} />
+        <Route path="/teacher" element={<BecomeATeacher />} />
         <Route path="/login" element={< LoginPage/>} />
         <Route path="/howitwork" element={< HowItWorks/>} />
          <Route path="/signup" element={< SignupPage/>} />
          <Route path="/teacherprofile" element={< TeacherProfile/>} />
         <Route path="/chatbot" element={< TutorMateChatbot/>} />
         <Route path="/rolechoose" element={< RoleSelectionPage/>} />
-        <Route path="/registerstudent" element={< RegisterStudentPage/>} />
-         <Route path="/registerparent" element={< RegisterParentPage/>} />
+        <Route path="/student" element={< RegisterStudentPage/>} />
+         <Route path="/parent" element={< RegisterParentPage/>} />
+          <Route path="/profile" element={< ProfilePage/>} />
       </Routes>
     </>
   );

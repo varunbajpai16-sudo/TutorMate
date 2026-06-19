@@ -25,84 +25,112 @@ const generateToken = async (userid) => {
 };
 
 const createUser = AsyncHandler(async (req, res) => {
-  const { name, email, role, googleId } = req.body;
-  if (!name || !email || !role || !googleId) {
+  const { accessToken, role } = req.body;
+
+  // Fetch user data from Google
+  const response = await fetch(
+    'https://www.googleapis.com/oauth2/v3/userinfo',
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new ApiError(401, 'Invalid Google access token');
+  }
+
+  const { name, email, sub } = await response.json();
+
+  if (!name || !email || !role || !sub) {
     throw new ApiError(400, 'All fields are required');
   }
 
-  const existingUser = await User.findOne({ email, googleId });
+  // Check if user already exists
+  const existingUser = await User.findOne({
+    $or: [{ email }, { googleId: sub }],
+  });
 
   if (existingUser) {
     throw new ApiError(400, 'User already exists');
   }
 
-  const avatar = req.file?.path;
-  console.log(avatar);
+  // Upload avatar if provided
+  let avatarUrl = null;
 
-  if (avatar) {
-    const avataruplode = await uploadToCloudinary(avatar);
-    console.log(avataruplode);
-    const user = await User.create({
-      name,
-      email,
-      role,
-      googleId,
-      avatar: avataruplode?.url || null,
-    });
-
-    const { refreshToken, accessToken } = await generateToken(user._id);
-
-    const options = {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: 24 * 60 * 60 * 1000,
-    };
-
-    return res
-      .status(200)
-      .cookie('refreshToken', refreshToken, options)
-      .cookie('accessToken', accessToken, options)
-      .json(new Apireponse(200, 'User Created Sucessfully', user));
-  } else {
-    const user = await User.create({
-      name,
-      email,
-      role,
-      googleId,
-    });
-
-    const { refreshToken, accessToken } = await generateToken(user._id);
-
-    const options = {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: 24 * 60 * 60 * 1000,
-    };
-
-    return res
-      .status(200)
-      .cookie('refreshToken', refreshToken, options)
-      .cookie('accessToken', accessToken, options)
-      .json(new Apireponse(200, 'User Created Sucessfully', user));
+  if (req.file?.path) {
+    const uploadedAvatar = await uploadToCloudinary(req.file.path);
+    avatarUrl = uploadedAvatar?.url || null;
   }
+
+  // Create user
+  const user = await User.create({
+    name,
+    email,
+    role,
+    googleId: sub,
+    avatar: avatarUrl,
+  });
+
+  // Generate JWT tokens
+  const { refreshToken, accessToken: jwtAccessToken } = await generateToken(
+    user._id,
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+    maxAge: 24 * 60 * 60 * 1000,
+  };
+
+  return res
+    .status(201)
+    .cookie('refreshToken', refreshToken, options)
+    .cookie('accessToken', jwtAccessToken, options)
+    .json(new Apireponse(201, 'User Created Successfully', user));
 });
 
 const loginUser = AsyncHandler(async (req, res) => {
-  const { name, email, role, googleId } = req.body;
+  const { accessToken } = req.body;
 
-  const user = await User.findOne({ email, googleId });
+  // Fetch user data from Google
+  const response = await fetch(
+    'https://www.googleapis.com/oauth2/v3/userinfo',
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  );
 
-  if (!user) {
+  if (!response.ok) {
+    throw new ApiError(401, 'Invalid Google access token');
+  }
+
+  const { name, email, sub } = await response.json();
+
+  if (!name || !email || !sub) {
+    throw new ApiError(400, 'All fields are required');
+  }
+
+  // Check if user already exists
+  const existingUser = await User.findOne({
+    $or: [{ email }, { googleId: sub }],
+  });
+
+  if (!existingUser) {
     const Newuser = await User.create({
       name,
       email,
-      role,
-      googleId,
+      role: 'student',
+      googleId: sub,
     });
 
-    const { refreshToken, accessToken } = await generateToken(Newuser._id);
+    const { refreshToken, accessToken: jwtAccessToken } = await generateToken(
+      Newuser._id,
+    );
 
     const options = {
       httpOnly: true,
@@ -114,10 +142,12 @@ const loginUser = AsyncHandler(async (req, res) => {
     return res
       .status(200)
       .cookie('refreshToken', refreshToken, options)
-      .cookie('accessToken', accessToken, options)
+      .cookie('accessToken', jwtAccessToken, options)
       .json(new Apireponse(200, 'User Created Sucessfully', Newuser));
   } else {
-    const { refreshToken, accessToken } = await generateToken(user._id);
+    const { refreshToken, accessToken: jwtAccessToken } = await generateToken(
+      existingUser._id,
+    );
 
     const options = {
       httpOnly: true,
@@ -129,8 +159,8 @@ const loginUser = AsyncHandler(async (req, res) => {
     return res
       .status(200)
       .cookie('refreshToken', refreshToken, options)
-      .cookie('accessToken', accessToken, options)
-      .json(new Apireponse(200, 'User Login Sucessfully', user));
+      .cookie('accessToken', jwtAccessToken, options)
+      .json(new Apireponse(200, 'User Login Sucessfully', existingUser));
   }
 });
 
@@ -196,9 +226,9 @@ const teacherRegistration = AsyncHandler(async (req, res) => {
 });
 
 const studentRegistration = AsyncHandler(async (req, res) => {
-  const { studentClass, subjects, location, latitude, longitude } = req.body;
+  const { studentClass, subjects, location, coordinates } = req.body;
 
-  const user = await Student.findOne({ userid: req.user._id });
+  const user = await Student.findOne({ googleId: req.user.googleId });
 
   if (user) {
     throw new ApiError(404, 'Student Already Exist');
@@ -217,10 +247,7 @@ const studentRegistration = AsyncHandler(async (req, res) => {
     subjects,
     studentClass,
     location,
-    coordinates: {
-      type: 'Point',
-      coordinates: [longitude, latitude],
-    },
+    coordinates,
   });
 
   if (!student) {
@@ -267,7 +294,7 @@ const RegisterParent = AsyncHandler(async (req, res) => {
 const getNearbyTeachers = async (req, res) => {
   try {
     const { latitude, longitude } = req.body;
-  
+
     const teachers = await Teacher.aggregate([
       {
         $geoNear: {

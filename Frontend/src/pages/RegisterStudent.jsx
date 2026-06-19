@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import api from "../services/axios";
 import {
   ArrowLeft,
   ArrowRight,
@@ -33,7 +35,14 @@ const classOptions = [
   "Postgraduate",
 ];
 
-const locationOptions = ["Meerut", "Delhi", "Noida", "Ghaziabad", "Gurgaon", "Lucknow"];
+const locationOptions = [
+  "Meerut",
+  "Delhi",
+  "Noida",
+  "Ghaziabad",
+  "Gurgaon",
+  "Lucknow",
+];
 
 const subjectList = [
   "Mathematics",
@@ -46,20 +55,17 @@ const subjectList = [
 
 export default function RegisterStudentPage() {
   const navigate = useNavigate();
+  const user = useSelector((state) => state.auth.user);
 
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
+    name: user.name,
+    email: user.email,
     studentClass: "",
     location: "",
   });
   const [subjects, setSubjects] = useState([]);
   const [coordinates, setCoordinates] = useState(null); // [lng, lat]
   const [locationStatus, setLocationStatus] = useState("idle"); // idle | loading | success | error
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -71,7 +77,9 @@ export default function RegisterStudentPage() {
 
   const toggleSubject = (subject) => {
     setSubjects((prev) =>
-      prev.includes(subject) ? prev.filter((s) => s !== subject) : [...prev, subject],
+      prev.includes(subject)
+        ? prev.filter((s) => s !== subject)
+        : [...prev, subject],
     );
   };
 
@@ -95,15 +103,13 @@ export default function RegisterStudentPage() {
     const next = {};
     if (!formData.name.trim()) next.name = "Full name is required";
     if (!formData.email.trim()) next.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) next.email = "Enter a valid email";
-    if (!formData.password) next.password = "Password is required";
-    else if (formData.password.length < 6) next.password = "Use at least 6 characters";
-    if (formData.confirmPassword !== formData.password)
-      next.confirmPassword = "Passwords do not match";
+    else if (!/\S+@\S+\.\S+/.test(formData.email))
+      next.email = "Enter a valid email";
     if (!formData.studentClass) next.studentClass = "Select your class";
     if (subjects.length === 0) next.subjects = "Select at least one subject";
     if (!formData.location) next.location = "Select your city";
-    if (!coordinates) next.coordinates = "Share your location so we can find nearby tutors";
+    if (!coordinates)
+      next.coordinates = "Share your location so we can find nearby tutors";
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -118,26 +124,17 @@ export default function RegisterStudentPage() {
       const payload = {
         name: formData.name,
         email: formData.email,
-        password: formData.password,
-        role: "student",
         studentClass: formData.studentClass,
         subjects,
         location: formData.location,
         coordinates: { type: "Point", coordinates },
       };
-
-      const res = await fetch("/api/auth/register/student", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      const res = await api.post("user/registerstudent", payload);
+      navigate("/", {
+        state: {
+          accountCreated: true,
+        },
       });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || "Something went wrong. Please try again.");
-      }
-
-      navigate("/login");
     } catch (err) {
       setSubmitError(err.message || "Something went wrong. Please try again.");
     } finally {
@@ -174,13 +171,17 @@ export default function RegisterStudentPage() {
             onClick={() => navigate("/login")}
             className="hidden items-center gap-1.5 text-sm font-medium text-slate-700 sm:flex hover:cursor-pointer hover:text-violet-600"
           >
-            Already have an account? <span style={{ color: PURPLE }}>Log In</span>
+            Already have an account?{" "}
+            <span style={{ color: PURPLE }}>Log In</span>
           </a>
         </div>
       </header>
 
       {/* Form */}
-      <section className="flex flex-1 justify-center px-6 py-12" style={{ backgroundColor: "#F4F2FC" }}>
+      <section
+        className="flex flex-1 justify-center px-6 py-12"
+        style={{ backgroundColor: "#F4F2FC" }}
+      >
         <div className="w-full max-w-2xl">
           <button
             onClick={() => navigate("/rolechoose")}
@@ -222,12 +223,16 @@ export default function RegisterStudentPage() {
                         onChange={handleChange}
                         placeholder="Full name"
                         className={`${inputBase} ${
-                          errors.name ? "border-rose-300" : "border-slate-200 focus:border-violet-400"
+                          errors.name
+                            ? "border-rose-300"
+                            : "border-slate-200 focus:border-violet-400"
                         }`}
                       />
                     </div>
                     {errors.name && (
-                      <p className="mt-1 text-xs text-rose-500">{errors.name}</p>
+                      <p className="mt-1 text-xs text-rose-500">
+                        {errors.name}
+                      </p>
                     )}
                   </div>
 
@@ -241,73 +246,17 @@ export default function RegisterStudentPage() {
                         onChange={handleChange}
                         placeholder="Email address"
                         className={`${inputBase} ${
-                          errors.email ? "border-rose-300" : "border-slate-200 focus:border-violet-400"
+                          errors.email
+                            ? "border-rose-300"
+                            : "border-slate-200 focus:border-violet-400"
                         }`}
                       />
                     </div>
                     {errors.email && (
-                      <p className="mt-1 text-xs text-rose-500">{errors.email}</p>
+                      <p className="mt-1 text-xs text-rose-500">
+                        {errors.email}
+                      </p>
                     )}
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <div className="relative flex items-center">
-                        <Lock className="pointer-events-none absolute left-3.5 h-4 w-4 text-slate-400" />
-                        <input
-                          name="password"
-                          type={showPassword ? "text" : "password"}
-                          value={formData.password}
-                          onChange={handleChange}
-                          placeholder="Password"
-                          className={`${inputBase} pr-10 ${
-                            errors.password ? "border-rose-300" : "border-slate-200 focus:border-violet-400"
-                          }`}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword((v) => !v)}
-                          className="absolute right-3.5 text-slate-400 hover:cursor-pointer hover:text-slate-600"
-                        >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                      {errors.password && (
-                        <p className="mt-1 text-xs text-rose-500">{errors.password}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <div className="relative flex items-center">
-                        <Lock className="pointer-events-none absolute left-3.5 h-4 w-4 text-slate-400" />
-                        <input
-                          name="confirmPassword"
-                          type={showConfirmPassword ? "text" : "password"}
-                          value={formData.confirmPassword}
-                          onChange={handleChange}
-                          placeholder="Confirm password"
-                          className={`${inputBase} pr-10 ${
-                            errors.confirmPassword
-                              ? "border-rose-300"
-                              : "border-slate-200 focus:border-violet-400"
-                          }`}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirmPassword((v) => !v)}
-                          className="absolute right-3.5 text-slate-400 hover:cursor-pointer hover:text-slate-600"
-                        >
-                          {showConfirmPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-                      {errors.confirmPassword && (
-                        <p className="mt-1 text-xs text-rose-500">{errors.confirmPassword}</p>
-                      )}
-                    </div>
                   </div>
                 </div>
               </div>
@@ -345,7 +294,9 @@ export default function RegisterStudentPage() {
                       <ChevronDown className="pointer-events-none absolute right-3.5 h-4 w-4 text-slate-400" />
                     </div>
                     {errors.studentClass && (
-                      <p className="mt-1 text-xs text-rose-500">{errors.studentClass}</p>
+                      <p className="mt-1 text-xs text-rose-500">
+                        {errors.studentClass}
+                      </p>
                     )}
                   </div>
 
@@ -357,7 +308,9 @@ export default function RegisterStudentPage() {
                         value={formData.location}
                         onChange={handleChange}
                         className={`${inputBase} appearance-none pr-10 hover:cursor-pointer ${
-                          errors.location ? "border-rose-300" : "border-slate-200 focus:border-violet-400"
+                          errors.location
+                            ? "border-rose-300"
+                            : "border-slate-200 focus:border-violet-400"
                         }`}
                       >
                         <option value="">Select your city</option>
@@ -370,7 +323,9 @@ export default function RegisterStudentPage() {
                       <ChevronDown className="pointer-events-none absolute right-3.5 h-4 w-4 text-slate-400" />
                     </div>
                     {errors.location && (
-                      <p className="mt-1 text-xs text-rose-500">{errors.location}</p>
+                      <p className="mt-1 text-xs text-rose-500">
+                        {errors.location}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -390,7 +345,11 @@ export default function RegisterStudentPage() {
                           className="rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:cursor-pointer"
                           style={
                             isSelected
-                              ? { borderColor: PURPLE, backgroundColor: "#EEEAFC", color: PURPLE }
+                              ? {
+                                  borderColor: PURPLE,
+                                  backgroundColor: "#EEEAFC",
+                                  color: PURPLE,
+                                }
                               : { borderColor: "#E2E8F0", color: "#475569" }
                           }
                         >
@@ -400,12 +359,16 @@ export default function RegisterStudentPage() {
                     })}
                   </div>
                   {errors.subjects && (
-                    <p className="mt-1.5 text-xs text-rose-500">{errors.subjects}</p>
+                    <p className="mt-1.5 text-xs text-rose-500">
+                      {errors.subjects}
+                    </p>
                   )}
                 </div>
 
                 <div className="mt-4">
-                  <p className="text-sm font-medium text-slate-700">Your location</p>
+                  <p className="text-sm font-medium text-slate-700">
+                    Your location
+                  </p>
                   <p className="mt-1 text-xs text-slate-400">
                     We use this to match you with tutors near you.
                   </p>
@@ -438,7 +401,9 @@ export default function RegisterStudentPage() {
                     )}
                   </div>
                   {errors.coordinates && (
-                    <p className="mt-1.5 text-xs text-rose-500">{errors.coordinates}</p>
+                    <p className="mt-1.5 text-xs text-rose-500">
+                      {errors.coordinates}
+                    </p>
                   )}
                 </div>
               </div>
@@ -456,10 +421,12 @@ export default function RegisterStudentPage() {
                 className="flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition-colors disabled:opacity-60"
                 style={{ backgroundColor: PURPLE }}
                 onMouseEnter={(e) => {
-                  if (!submitting) e.currentTarget.style.backgroundColor = PURPLE_DARK;
+                  if (!submitting)
+                    e.currentTarget.style.backgroundColor = PURPLE_DARK;
                 }}
                 onMouseLeave={(e) => {
-                  if (!submitting) e.currentTarget.style.backgroundColor = PURPLE;
+                  if (!submitting)
+                    e.currentTarget.style.backgroundColor = PURPLE;
                 }}
               >
                 {submitting ? (

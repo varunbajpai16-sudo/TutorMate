@@ -5,7 +5,7 @@ import ApiError from '../utils/ApiError.utils.js'
 
 export const VerifyJwt = AsyncHandler(async (req, __, next) => {
   const token =
-    req.cookies?.accesstoken ||
+    req.cookies?.accessToken ||
     (req.header('Authorization')?.startsWith('Bearer ')
       ? req.header('Authorization').replace('Bearer ', '')
       : null)
@@ -27,5 +27,6 @@ export const VerifyJwt = AsyncHandler(async (req, __, next) => {
     throw new ApiError(404, 'User not Found')
   }
   req.user = user
+  console.log("next")
   next()
 })

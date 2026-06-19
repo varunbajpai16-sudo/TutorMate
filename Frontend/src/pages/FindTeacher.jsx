@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useSelector } from "react-redux";
 import {
   GraduationCap,
   ShieldCheck,
@@ -21,7 +22,7 @@ const navLinks = [
   { label: "Find Teachers", link: "/findteacher" },
   { label: "Subjects", link: "/subjects" },
   { label: "How it Works", link: "/howitwork" },
-  { label: "Become a Teacher", link: "/becomeateacher" },
+  { label: "Become a Teacher", link: "/teacher" },
 ];
 
 const subjectList = [
@@ -338,6 +339,7 @@ export default function FindTeachersPage() {
   const [selectedRatings, setSelectedRatings] = useState([]);
   const [sortBy, setSortBy] = useState("relevance");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const user = useSelector((state)=>state.auth.user)
 
   const subjectCounts = useMemo(
     () =>
@@ -557,6 +559,18 @@ export default function FindTeachersPage() {
             >
               Sign Up
             </button>
+             <div className="flex items-center gap-2 cursor-pointer">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-violet-200 bg-violet-600 text-sm font-bold text-white">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+
+              <div className="hidden md:block">
+                <p className="text-sm font-semibold text-slate-800">
+                  {user.name}
+                </p>
+                <p className="text-xs text-slate-500">Student</p>
+              </div>
+            </div>
           </div>
         </div>
       </header>

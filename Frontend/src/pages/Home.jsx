@@ -1,7 +1,8 @@
 import React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MessageCircle } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useSelector } from "react-redux";
 import {
   GraduationCap,
   BookOpen,
@@ -20,6 +21,7 @@ import {
   Atom,
   Monitor,
   Brain,
+  CheckCircle2,
 } from "lucide-react";
 
 const subjectList = [
@@ -38,7 +40,7 @@ const navLinks = [
   { label: "Find Teachers", link: "/findteacher" },
   { label: "Subjects", link: "/subjects" },
   { label: "How it Works", link: "/howitwork" },
-  { label: "Become a Teacher", link: "/becomeateacher" },
+  { label: "Become a Teacher", link: "/teacher" },
 ];
 
 const features = [
@@ -471,9 +473,57 @@ function HeroIllustration() {
 export default function TutorMateHomepage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const user = useSelector((state)=>state.auth.user)
+  const [showSuccessPopup, setShowSuccessPopup] = useState(
+    location.state?.accountCreated || false,
+  );
+
+  useEffect(() => {
+    if (location.state?.accountCreated) {
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
   const [selectedSubjects, setSelectedSubjects] = useState([]);
   return (
     <div className="min-h-screen bg-white font-sans antialiased">
+      {showSuccessPopup && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
+            <div className="flex justify-center">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
+                <CheckCircle2 className="h-10 w-10 text-emerald-600" />
+              </div>
+            </div>
+
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900">
+              Account Created!
+            </h2>
+
+            <p className="mt-3 text-center text-slate-500">
+              Your account has been created successfully.
+            </p>
+
+            <div className="mt-8 flex gap-3">
+              <button
+                onClick={() => setShowSuccessPopup(false)}
+                className="flex-1 rounded-xl border border-slate-200 px-5 py-3 font-semibold"
+              >
+                Close
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowSuccessPopup(false);
+                  navigate("/findteacher");
+                }}
+                className="flex-1 rounded-xl bg-violet-600 px-5 py-3 font-semibold text-white"
+              >
+                Find Teachers
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <header className="border-b border-slate-100 bg-white">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10">
@@ -531,6 +581,19 @@ export default function TutorMateHomepage() {
             >
               Sign Up
             </button>
+
+            <div className="flex items-center gap-2 cursor-pointer">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-violet-200 bg-violet-600 text-sm font-bold text-white">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+
+              <div className="hidden md:block">
+                <p className="text-sm font-semibold text-slate-800">
+                  {user.name}
+                </p>
+                <p className="text-xs text-slate-500">Student</p>
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -597,7 +660,7 @@ export default function TutorMateHomepage() {
       font-medium
       text-slate-700
       outline-none
-      cursor-pointer
+      cursor-pointer 
     "
                   >
                     <option value="">Select Location</option>
@@ -614,7 +677,7 @@ export default function TutorMateHomepage() {
                 <button
                   className="flex items-center justify-center gap-2 whitespace-nowrap rounded-lg px-6 py-3 text-sm font-semibold text-white"
                   style={{ backgroundColor: PURPLE }}
-                  onClick={()=>navigate("/findteacher")}
+                  onClick={() => navigate("/findteacher")}
                 >
                   <Search className="h-4 w-4" />
                   Search Teachers

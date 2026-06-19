@@ -1,5 +1,9 @@
 import React, { useState } from "react";
+import { useGoogleLogin } from "@react-oauth/google";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useDispatch,useSelector } from "react-redux";
+
+import api from "../services/axios"
 import {
   GraduationCap,
   ShieldCheck,
@@ -25,7 +29,7 @@ const navLinks = [
   { label: "Find Teachers", link: "/findteacher" },
   { label: "Subjects", link: "/subjects" },
   { label: "How it Works", link: "/howitwork" },
-  { label: "Become a Teacher", link: "/becomeateacher" },
+  { label: "Become a Teacher", link: "/teacher" },
 ];
 
 const benefits = [
@@ -81,6 +85,20 @@ function GoogleIcon() {
 export default function SignupPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch()
+  const user = useSelector((state)=>state.auth.user)
+  const googleLogin = useGoogleLogin({
+      onSuccess: async (tokenResponse) => {
+        navigate("/rolechoose",{
+          state:{
+            accessToken:tokenResponse
+          }
+        })
+      },
+      onError: () => {
+        console.log("Google Login Failed");
+      },
+    });
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -150,6 +168,18 @@ export default function SignupPage() {
             >
               Sign Up
             </button>
+             <div className="flex items-center gap-2 cursor-pointer">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-violet-200 bg-violet-600 text-sm font-bold text-white">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+
+              <div className="hidden md:block">
+                <p className="text-sm font-semibold text-slate-800">
+                  {user.name}
+                </p>
+                <p className="text-xs text-slate-500">Student</p>
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -261,7 +291,10 @@ export default function SignupPage() {
                 </p>
               </div>
 
-              <button className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+               <button
+                onClick={() => googleLogin()}
+                className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:bg-slate-100"
+              >
                 <GoogleIcon />
                 Continue with Google
               </button>

@@ -1,5 +1,14 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
+import { useLocation } from "react-router-dom";
+import {
+  loginStart,
+  loginSuccess,
+  loginFailure,
+} from "../features/auth/auth.silice";
+import api from "../services/axios";
 import {
   BookOpen,
   GraduationCap,
@@ -8,6 +17,8 @@ import {
   ArrowRight,
   Check,
   ShieldCheck,
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react";
 
 const PURPLE = "#6C5DD3";
@@ -15,7 +26,7 @@ const PURPLE_DARK = "#5A4BC4";
 
 const roles = [
   {
-    id: "becomeateacher",
+    id: "teacher",
     title: "Teacher",
     tagline: "I want to teach",
     desc: "Create your profile, list the subjects you teach, and get discovered by students near you.",
@@ -24,7 +35,7 @@ const roles = [
     color: "text-indigo-600",
   },
   {
-    id: "registerparent",
+    id: "parent",
     title: "Parent",
     tagline: "I'm looking for a tutor",
     desc: "Find verified, experienced tutors for your child and keep track of their progress.",
@@ -33,7 +44,7 @@ const roles = [
     color: "text-amber-500",
   },
   {
-    id: "registerstudent",
+    id: "student",
     title: "Student",
     tagline: "I want to learn",
     desc: "Browse subjects, book sessions, and connect with tutors who match how you learn best.",
@@ -46,14 +57,80 @@ const roles = [
 export default function RoleSelectionPage() {
   const navigate = useNavigate();
   const [selectedRole, setSelectedRole] = useState(null);
-
-  const handleContinue = () => {
+  const location = useLocation();
+  const accessToken = location.state;
+  const [showSuccessPopup, setShowSuccessPopup] = useState();
+  const dispatch = useDispatch();
+  const handleContinue = async () => {
+    try {
+      dispatch(loginStart());
+      const role = selectedRole;
+      const response = await api.post("user/createuser", {
+        accessToken: accessToken.accessToken.access_token,
+        role,
+      });
+      if (response.status >= 200 && response.status < 300) {
+        const user = response.data.data;
+        console.log(user);
+        dispatch(
+          loginSuccess({
+            user,
+            accessToken: null,
+          }),
+        );
+        console.log("User created sucessfull");
+        navigate(`/${selectedRole}`);
+        localStorage.setItem("user", JSON.stringify(user));
+        setShowSuccessPopup(true);
+      }
+    } catch (error) {
+      setShowSuccessPopup(true);
+      dispatch(loginFailure());
+    }
     if (!selectedRole) return;
-    navigate(`/${selectedRole}`);
   };
 
   return (
     <div className="min-h-screen bg-white font-sans antialiased flex flex-col">
+      {showSuccessPopup && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
+            <div className="flex justify-center">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-amber-100">
+                <AlertCircle className="h-10 w-10 text-amber-600" />
+              </div>
+            </div>
+
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900">
+              Account Already Exists
+            </h2>
+
+            <p className="mt-3 text-center text-slate-500">
+              You have already registered as a student. You can continue using
+              your existing account to find teachers and manage your profile.
+            </p>
+
+            <div className="mt-8 flex gap-3">
+              <button
+                onClick={() => setShowSuccessPopup(false)}
+                className="flex-1 rounded-xl border border-slate-200 px-5 py-3 font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Close
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowSuccessPopup(false);
+                  navigate("/login");
+                }}
+                className="flex-1 rounded-xl bg-violet-600 px-5 py-3 font-semibold text-white hover:bg-violet-700"
+              >
+               Login
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <header className="border-b border-slate-100 bg-white">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10">
@@ -124,8 +201,7 @@ export default function RoleSelectionPage() {
                     isSelected
                       ? {
                           borderColor: PURPLE,
-                          boxShadow:
-                            "0 12px 28px -8px rgba(108,93,211,0.35)",
+                          boxShadow: "0 12px 28px -8px rgba(108,93,211,0.35)",
                         }
                       : undefined
                   }

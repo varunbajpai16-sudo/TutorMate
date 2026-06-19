@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useGoogleLogin } from "@react-oauth/google";
+import { useSelector } from "react-redux";
 import {
   GraduationCap,
   ShieldCheck,
@@ -12,7 +14,7 @@ import {
   Star,
   BookOpen,
   TrendingUp,
-  Brain
+  Brain,
 } from "lucide-react";
 
 const PURPLE = "#6C5DD3";
@@ -23,7 +25,7 @@ const navLinks = [
   { label: "Find Teachers", link: "/findteacher" },
   { label: "Subjects", link: "/subjects" },
   { label: "How it Works", link: "/howitwork" },
-  { label: "Become a Teacher", link: "/becomeateacher" },
+  { label: "Become a Teacher", link: "/teacher" },
 ];
 
 const benefits = [
@@ -83,6 +85,16 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+const user = useSelector((state)=>state.auth.user)
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      console.log("Google Login:");
+      console.log(tokenResponse);
+    },
+    onError: () => {
+      console.log("Google Login Failed");
+    },
+  });
 
   return (
     <div className="min-h-screen bg-white font-sans antialiased">
@@ -91,7 +103,10 @@ export default function LoginPage() {
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div onClick={()=>navigate("/")}  className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 shadow-lg">
+            <div
+              onClick={() => navigate("/")}
+              className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 shadow-lg"
+            >
               <BookOpen className="h-6 w-6 text-amber-300" />
             </div>
             <div>
@@ -146,6 +161,18 @@ export default function LoginPage() {
             >
               Sign Up
             </button>
+            <div className="flex items-center gap-2 cursor-pointer">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-violet-200 bg-violet-600 text-sm font-bold text-white">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+
+              <div className="hidden md:block">
+                <p className="text-sm font-semibold text-slate-800">
+                  {user.name}
+                </p>
+                <p className="text-xs text-slate-500">Student</p>
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -252,7 +279,10 @@ export default function LoginPage() {
               </div>
 
               {/* Google sign-in */}
-              <button className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:bg-slate-100">
+              <button
+                onClick={() => googleLogin()}
+                className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:bg-slate-100"
+              >
                 <GoogleIcon />
                 Continue with Google
               </button>
@@ -378,7 +408,7 @@ export default function LoginPage() {
           </div>
         </div>
       </section>
-        {/* AI Tutor Assistant Button */}
+      {/* AI Tutor Assistant Button */}
       <button
         onClick={() => navigate("/chatbot")}
         className="fixed bottom-6 right-6 z-50 group"
