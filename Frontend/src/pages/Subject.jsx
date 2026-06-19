@@ -316,18 +316,6 @@ export default function SubjectsPage() {
             >
               Sign Up
             </button>
-            <div className="flex items-center gap-2 cursor-pointer">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-violet-200 bg-violet-600 text-sm font-bold text-white">
-                {user.name.charAt(0).toUpperCase()}
-              </div>
-
-              <div className="hidden md:block">
-                <p className="text-sm font-semibold text-slate-800">
-                  {user.name}
-                </p>
-                <p className="text-xs text-slate-500">Student</p>
-              </div>
-            </div>
           </div>
         </div>
       </header>
