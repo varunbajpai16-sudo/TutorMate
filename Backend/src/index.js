@@ -4,7 +4,7 @@ import app from "./app.js"
 import {connectToDatabase} from "./db/Database_Connection.js"
 
 connectToDatabase().then(()=>{
-    app.listen(process.env.PORT_NO,()=>{
+    app.listen(process.env.PORT,()=>{
         console.log(`🚀 Server is running on port ${process.env.PORT_NO}`);
     })
 }).catch(error=>{
