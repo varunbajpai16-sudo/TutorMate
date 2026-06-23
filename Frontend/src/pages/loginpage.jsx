@@ -128,9 +128,9 @@ export default function LoginPage() {
               accessToken: null,
             }),
           );
-
-          alert("Login Successful");
-          navigate("/");
+          setTimeout(() => {
+            navigate("/")
+          },2000);
         } else {
           navigate("/rolechoose", {
             state: {
