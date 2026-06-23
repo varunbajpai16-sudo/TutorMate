@@ -91,7 +91,7 @@ export default function LoginPage() {
   const dispatch = useDispatch();
   const [showPopup, setShowPopup] = useState(false);
   const user = useSelector((state) => state.auth.user);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const HandelLogout = () => {
     localStorage.clear("user");
