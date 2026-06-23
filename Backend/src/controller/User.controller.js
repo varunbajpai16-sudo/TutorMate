@@ -6,6 +6,8 @@ import uploadToCloudinary from '../utils/Cloudinary.util.js';
 import { Teacher } from '../models/teacher.models.js';
 import { Student } from '../models/student.models.js';
 import { Parent } from '../models/parent.models.js';
+import { APIResource } from '@anthropic-ai/sdk/resource.js';
+import { json } from 'stream/consumers';
 
 const generateToken = async (userid) => {
   const user = await User.findById(userid);
@@ -94,7 +96,6 @@ const createUser = AsyncHandler(async (req, res) => {
 
 const loginUser = AsyncHandler(async (req, res) => {
   const { accessToken } = req.body;
-
   // Fetch user data from Google
   const response = await fetch(
     'https://www.googleapis.com/oauth2/v3/userinfo',
@@ -114,54 +115,40 @@ const loginUser = AsyncHandler(async (req, res) => {
   if (!name || !email || !sub) {
     throw new ApiError(400, 'All fields are required');
   }
-
+  console.log('login controller');
   // Check if user already exists
   const existingUser = await User.findOne({
     $or: [{ email }, { googleId: sub }],
   });
 
   if (!existingUser) {
-    const Newuser = await User.create({
-      name,
-      email,
-      role: 'student',
-      googleId: sub,
-    });
-
-    const { refreshToken, accessToken: jwtAccessToken } = await generateToken(
-      Newuser._id,
+    return res.status(200).json(
+      new Apireponse(200, 'New User', {
+        newuser: true,
+      }),
     );
-
-    const options = {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: 24 * 60 * 60 * 1000,
-    };
-
-    return res
-      .status(200)
-      .cookie('refreshToken', refreshToken, options)
-      .cookie('accessToken', jwtAccessToken, options)
-      .json(new Apireponse(200, 'User Created Sucessfully', Newuser));
-  } else {
-    const { refreshToken, accessToken: jwtAccessToken } = await generateToken(
-      existingUser._id,
-    );
-
-    const options = {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: 24 * 60 * 60 * 1000,
-    };
-
-    return res
-      .status(200)
-      .cookie('refreshToken', refreshToken, options)
-      .cookie('accessToken', jwtAccessToken, options)
-      .json(new Apireponse(200, 'User Login Sucessfully', existingUser));
   }
+  const { refreshToken, accessToken: jwtAccessToken } = await generateToken(
+    existingUser._id,
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+    maxAge: 24 * 60 * 60 * 1000,
+  };
+
+  return res
+    .status(200)
+    .cookie('refreshToken', refreshToken, options)
+    .cookie('accessToken', jwtAccessToken, options)
+    .json(
+      new Apireponse(200, 'User Login Sucessfully', {
+        existingUser,
+        newuser: false,
+      }),
+    );
 });
 
 const teacherRegistration = AsyncHandler(async (req, res) => {

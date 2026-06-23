@@ -476,6 +476,7 @@ export default function TutorMateHomepage() {
   const [showSuccessPopup, setShowSuccessPopup] = useState(
     location.state?.accountCreated || false,
   );
+  const user = useSelector((state) => state.auth.user);
 
   useEffect(() => {
     if (location.state?.accountCreated) {
@@ -559,29 +560,33 @@ export default function TutorMateHomepage() {
             })}
           </nav>
 
-          <div className="flex items-center gap-5">
-            <a
-              onClick={() => navigate("/login")}
-              className="hidden items-center gap-1.5 text-sm font-medium text-slate-700 sm:flex hover:cursor-pointer hover:text-violet-600"
-            >
-              <ShieldCheck className="h-4 w-4" />
-              Login
-            </a>
-            <button
-              className="rounded-lg px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors"
-              style={{ backgroundColor: PURPLE }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = PURPLE_DARK)
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = PURPLE)
-              }
-              onClick={() => navigate("/signup")}
-            >
-              Sign Up
-            </button>
+          {user ? (
+            <div onClick={()=>navigate("/login")} className="flex items-center gap-3 cursor-pointer">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 text-sm font-bold text-white shadow-md">
+                {user.name?.charAt(0)?.toUpperCase() || "U"}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-5 cursor-pointer">
+                <a
+                  onClick={() => navigate("/login")}
+                  className="hidden items-center gap-1.5 text-sm font-medium text-slate-700 sm:flex hover:text-violet-600"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Login
+                </a>
 
-          </div>
+                <button
+                  onClick={() => navigate("/signup")}
+                  className="rounded-lg px-5 py-2.5 text-sm font-semibold text-white"
+                  style={{ backgroundColor: PURPLE }}
+                >
+                  Sign Up
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </header>
 

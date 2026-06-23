@@ -11,7 +11,7 @@ import {
   Star,
   SlidersHorizontal,
   X,
-  Brain
+  Brain,
 } from "lucide-react";
 
 const PURPLE = "#6C5DD3";
@@ -339,7 +339,7 @@ export default function FindTeachersPage() {
   const [selectedRatings, setSelectedRatings] = useState([]);
   const [sortBy, setSortBy] = useState("relevance");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const user = useSelector((state)=>state.auth.user)
+  const user = useSelector((state) => state.auth.user);
 
   const subjectCounts = useMemo(
     () =>
@@ -504,8 +504,10 @@ export default function FindTeachersPage() {
       <header className="border-b border-slate-100 bg-white">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10">
           <div className="flex items-center gap-3">
-            <div onClick={()=>navigate("/")} 
-             className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 shadow-lg">
+            <div
+              onClick={() => navigate("/")}
+              className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 shadow-lg"
+            >
               <BookOpen className="h-6 w-6 text-amber-300" />
             </div>
             <div>
@@ -538,29 +540,36 @@ export default function FindTeachersPage() {
             })}
           </nav>
 
-          <div className="flex items-center gap-5">
-            <a
+          {user ? (
+            <div
               onClick={() => navigate("/login")}
-              className="hidden items-center gap-1.5 text-sm font-medium text-slate-700 sm:flex hover:cursor-pointer hover:text-violet-600"
+              className="flex items-center gap-3 cursor-pointer"
             >
-              <ShieldCheck className="h-4 w-4" />
-              Login
-            </a>
-            <button
-              className="rounded-lg px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors"
-              style={{ backgroundColor: PURPLE }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = PURPLE_DARK)
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = PURPLE)
-              }
-              onClick={() => navigate("/signup")}
-            >
-              Sign Up
-            </button>
-        
-          </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 text-sm font-bold text-white shadow-md">
+                {user.name?.charAt(0)?.toUpperCase() || "U"}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-3 cursor-pointer">
+                <a
+                  onClick={() => navigate("/login")}
+                  className="hidden items-center gap-1.5 text-sm font-medium text-slate-700 sm:flex hover:text-violet-600"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Login
+                </a>
+
+                <button
+                  onClick={() => navigate("/signup")}
+                  className="rounded-lg px-5 py-2.5 text-sm font-semibold text-white"
+                  style={{ backgroundColor: PURPLE }}
+                >
+                  Sign Up
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </header>
 
@@ -841,7 +850,7 @@ export default function FindTeachersPage() {
           )}
         </div>
       </section>
-        {/* AI Tutor Assistant Button */}
+      {/* AI Tutor Assistant Button */}
       <button
         onClick={() => navigate("/chatbot")}
         className="fixed bottom-6 right-6 z-50 group"

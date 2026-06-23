@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useGoogleLogin } from "@react-oauth/google";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { loginSuccess,logout} from "../features/auth/auth.silice";
+import api from "../services/axios";
 import {
   GraduationCap,
   ShieldCheck,
@@ -85,11 +87,58 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-const user = useSelector((state)=>state.auth.user)
+  const dispatch = useDispatch();
+  const [showPopup, setShowPopup] = useState(false);
+
+  const user = useSelector((state) => state.auth.user);
+  
+  const HandelLogout = () => {
+    localStorage.clear("user");
+    alert("User Logout Sucessfully");
+    dispatch(logout())
+  };
+
+  const checklogin = () => {
+    const user = localStorage.getItem("user");
+
+    if (!user) {
+      googleLogin();
+    } else {
+      setShowPopup(true);
+    }
+  };
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
-      console.log("Google Login:");
-      console.log(tokenResponse);
+      try {
+        const accessToken = tokenResponse.access_token;
+        const response = await api.post("user/login", {
+          accessToken,
+        });
+        console.log(response);
+        if (!response.data.data.newuser) {
+          const loginuser = response.data.data.existingUser;
+
+          localStorage.setItem("user", JSON.stringify(loginuser));
+
+          dispatch(
+            loginSuccess({
+              user: loginuser,
+              accessToken: null,
+            }),
+          );
+
+          alert("Login Successful");
+          navigate("/");
+        } else {
+          navigate("/rolechoose", {
+            state: {
+             accessToken:tokenResponse
+            },
+          });
+        }
+      } catch (error) {
+        console.log(error);
+      }
     },
     onError: () => {
       console.log("Google Login Failed");
@@ -98,6 +147,26 @@ const user = useSelector((state)=>state.auth.user)
 
   return (
     <div className="min-h-screen bg-white font-sans antialiased">
+      {showPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="text-xl font-bold text-slate-900">
+              Already Logged In
+            </h2>
+
+            <p className="mt-2 text-slate-500">
+              You are already logged into your account.
+            </p>
+
+            <button
+              onClick={() => setShowPopup(false)}
+              className="mt-4 w-full rounded-lg bg-violet-600 py-2 text-white"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
       {/* ── Header ── */}
       <header className="border-b border-slate-100 bg-white">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10">
@@ -268,7 +337,7 @@ const user = useSelector((state)=>state.auth.user)
 
               {/* Google sign-in */}
               <button
-                onClick={() => googleLogin()}
+                onClick={() => checklogin()}
                 className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:bg-slate-100"
               >
                 <GoogleIcon />
@@ -296,7 +365,7 @@ const user = useSelector((state)=>state.auth.user)
                     <input
                       type="email"
                       placeholder="you@example.com"
-                      value={email}
+                      value={user?.email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="flex-1 bg-transparent text-sm text-slate-900 placeholder-slate-400 outline-none"
                     />
@@ -322,7 +391,7 @@ const user = useSelector((state)=>state.auth.user)
                     <input
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
-                      value={password}
+                      value={user?.googleId}
                       onChange={(e) => setPassword(e.target.value)}
                       className="flex-1 bg-transparent text-sm text-slate-900 placeholder-slate-400 outline-none"
                     />
@@ -360,19 +429,22 @@ const user = useSelector((state)=>state.auth.user)
                 </div>
 
                 {/* Submit */}
-                <button
-                  className="flex w-full items-center justify-center gap-2 rounded-lg py-3.5 text-sm font-semibold text-white shadow-sm transition-colors"
-                  style={{ backgroundColor: PURPLE }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.backgroundColor = PURPLE_DARK)
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.backgroundColor = PURPLE)
-                  }
-                >
-                  <ShieldCheck className="h-4 w-4" />
-                  Sign In Securely
-                </button>
+                {!user ? (
+                  <button
+                    className="flex w-full items-center justify-center gap-2 rounded-lg py-3.5 text-sm font-semibold text-white shadow-sm"
+                    style={{ backgroundColor: PURPLE }}
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    Sign In Securely
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => HandelLogout()}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 py-3.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
+                  >
+                    Logout
+                  </button>
+                )}
               </div>
 
               {/* Trust row */}
