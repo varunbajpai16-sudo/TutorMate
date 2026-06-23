@@ -128,9 +128,6 @@ export default function LoginPage() {
               accessToken: null,
             }),
           );
-          setTimeout(() => {
-            navigate("/")
-          },2000);
         } else {
           navigate("/rolechoose", {
             state: {
@@ -141,6 +138,9 @@ export default function LoginPage() {
       } catch (error) {
         console.log(error);
       } finally {
+         setTimeout(() => {
+            navigate("/")
+          },3000);
       setLoading(false);
     }
     },
