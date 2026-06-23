@@ -6,7 +6,6 @@ import uploadToCloudinary from '../utils/Cloudinary.util.js';
 import { Teacher } from '../models/teacher.models.js';
 import { Student } from '../models/student.models.js';
 import { Parent } from '../models/parent.models.js';
-import { APIResource } from '@anthropic-ai/sdk/resource.js';
 import { json } from 'stream/consumers';
 
 const generateToken = async (userid) => {
