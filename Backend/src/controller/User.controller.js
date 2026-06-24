@@ -151,6 +151,7 @@ const loginUser = AsyncHandler(async (req, res) => {
 });
 
 const teacherRegistration = AsyncHandler(async (req, res) => {
+
   const {
     subjects,
     classes,
@@ -160,23 +161,26 @@ const teacherRegistration = AsyncHandler(async (req, res) => {
     mode,
     education,
     experienceDetails,
-    latitude,
-    longitude,
+    coordinates
   } = req.body;
 
   if (!Array.isArray(subjects) || subjects.length === 0) {
+    
     throw new ApiError(400, 'Subjects must be a non-empty array');
   }
 
   if (!classes || !hourelyfee || !location || !mode) {
+    
     throw new ApiError(400, 'All Fields are Required');
   }
 
   if (!Array.isArray(experienceDetails) || experienceDetails.length === 0) {
+    
     throw new ApiError(400, 'Experience details are required');
   }
 
   if (!Array.isArray(education) || education.length === 0) {
+    
     throw new ApiError(400, 'Education details are required');
   }
 
@@ -185,6 +189,7 @@ const teacherRegistration = AsyncHandler(async (req, res) => {
   if (user) {
     throw new ApiError(404, 'Teacher Already Exist');
   }
+console.log("teacher")
 
   const teacher = await Teacher.create({
     userid: req.user._id,
@@ -196,11 +201,10 @@ const teacherRegistration = AsyncHandler(async (req, res) => {
     mode,
     education,
     experienceDetails,
-    coordinates: {
-      type: 'Point',
-      coordinates: [longitude, latitude],
-    },
+    coordinates
   });
+ 
+console.log(teacher)
 
   if (!teacher) {
     throw new ApiError(401, 'Internal Server Error While Registring Teacher ');
@@ -246,7 +250,8 @@ const studentRegistration = AsyncHandler(async (req, res) => {
 });
 
 const RegisterParent = AsyncHandler(async (req, res) => {
-  const { children, location, latitude, longitude } = req.body;
+  console.log(req.body)
+  const { children, location, coordinates } = req.body;
 
   if (!Array.isArray(children) || children.length === 0) {
     throw new ApiError(400, 'Children must be a non-empty array');
@@ -261,17 +266,14 @@ const RegisterParent = AsyncHandler(async (req, res) => {
   if (user) {
     throw new ApiError(409, 'Parent already exists');
   }
-
+console.log("there")
   const parent = await Parent.create({
     children,
     location,
     userid: req.user._id,
-    coordinates: {
-      type: 'Point',
-      coordinates: [longitude, latitude],
-    },
+    coordinates
   });
-
+console.log(parent)
   return res
     .status(201)
     .json(new Apireponse(201, 'Parent Registered Successfully', parent));

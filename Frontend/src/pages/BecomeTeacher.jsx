@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
+import api from "../services/axios";
 import {
   GraduationCap,
   BookOpen,
@@ -15,6 +16,7 @@ import {
   Star,
   Brain,
   TrendingUp,
+  X,
 } from "lucide-react";
 
 const PURPLE = "#6C5DD3";
@@ -29,6 +31,7 @@ const navLinks = [
   { label: "How it Works", link: "/howitwork" },
   { label: "Become a Teacher", link: "/teacher" },
 ];
+
 const stats = [
   { value: "12K+", label: "Active Teachers", color: PURPLE },
   { value: "₹45K", label: "Avg. Monthly Earnings", color: "#10B981" },
@@ -126,6 +129,42 @@ const testimonials = [
   },
 ];
 
+const SUBJECTS = [
+  "Mathematics",
+  "Physics",
+  "Chemistry",
+  "Biology",
+  "English",
+  "Computer Science",
+  "History",
+  "Geography",
+  "Hindi",
+  "Economics",
+  "Coding",
+  "Web Development",
+];
+
+const CLASSES = [
+  "Class 6",
+  "Class 7",
+  "Class 8",
+  "Class 9",
+  "Class 10",
+  "Class 11",
+  "Class 12",
+  "JEE",
+  "NEET",
+  "CBSE",
+  "ICSE",
+  "State Board",
+];
+
+const TEACHING_MODES = [
+  { label: "Online Only", value: "online" },
+  { label: "Offline (Home Visits)", value: "offline" },
+  { label: "Both Online & Offline", value: "both" },
+];
+
 function StarRating({ count }) {
   return (
     <div className="flex gap-0.5 mb-3">
@@ -139,13 +178,184 @@ function StarRating({ count }) {
 export default function BecomeATeacher() {
   const navigate = useNavigate();
   const location = useLocation();
+  const user = useSelector((state) => state.auth.user);
+
+  // Form state aligned with schema
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    phoneNumber: "",
+    location: "",
+    subjects: [],
+    classes: [],
+    hourelyfee: "",
+    bio: "",
+    mode: [],
+    education: [{ degree: "", institute: "", year: "" }],
+    experienceDetails: [{ institution: "", years: "" }],
+  });
+
   const [submitted, setSubmitted] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [fileName, setFileName] = useState("");
   const [consent, setConsent] = useState(false);
-const user = useSelector((state)=>state.auth.user)
-  const handleSubmit = (e) => {
+  const [coordinates, setCoordinates] = useState(null);
+
+  // Handle input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // Handle multi-select for subjects
+  const handleSubjectToggle = (subject) => {
+    setFormData((prev) => ({
+      ...prev,
+      subjects: prev.subjects.includes(subject)
+        ? prev.subjects.filter((s) => s !== subject)
+        : [...prev.subjects, subject],
+    }));
+  };
+
+  // Handle multi-select for classes
+  const handleClassToggle = (cls) => {
+    setFormData((prev) => ({
+      ...prev,
+      classes: prev.classes.includes(cls)
+        ? prev.classes.filter((c) => c !== cls)
+        : [...prev.classes, cls],
+    }));
+  };
+
+  // Handle multi-select for teaching modes
+  const handleModeToggle = (mode) => {
+    setFormData((prev) => ({
+      ...prev,
+      mode: prev.mode.includes(mode)
+        ? prev.mode.filter((m) => m !== mode)
+        : [...prev.mode, mode],
+    }));
+  };
+
+  // Handle education array
+  const handleEducationChange = (index, field, value) => {
+    const newEducation = [...formData.education];
+    newEducation[index][field] = value;
+    setFormData((prev) => ({
+      ...prev,
+      education: newEducation,
+    }));
+  };
+
+  const addEducationField = () => {
+    setFormData((prev) => ({
+      ...prev,
+      education: [...prev.education, { degree: "", institute: "", year: "" }],
+    }));
+  };
+
+  const removeEducationField = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      education: prev.education.filter((_, i) => i !== index),
+    }));
+  };
+
+  // Handle experience array
+  const handleExperienceChange = (index, field, value) => {
+    const newExperience = [...formData.experienceDetails];
+    newExperience[index][field] = value;
+    setFormData((prev) => ({
+      ...prev,
+      experienceDetails: newExperience,
+    }));
+  };
+
+  const addExperienceField = () => {
+    setFormData((prev) => ({
+      ...prev,
+      experienceDetails: [
+        ...prev.experienceDetails,
+        { institution: "", years: "" },
+      ],
+    }));
+  };
+
+  const removeExperienceField = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      experienceDetails: prev.experienceDetails.filter((_, i) => i !== index),
+    }));
+  };
+
+  // Get user coordinates
+  const getCoordinates = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        setCoordinates([position.coords.longitude, position.coords.latitude]);
+      });
+    }
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate required fields
+    if (
+      !formData.fullName ||
+      !formData.email ||
+      !formData.location ||
+      formData.subjects.length === 0 ||
+      formData.classes.length === 0 ||
+      !formData.hourelyfee ||
+      !formData.bio ||
+      formData.mode.length === 0
+    ) {
+      alert("Please fill all required fields");
+      return;
+    }
+
+    if (!consent) {
+      alert("Please agree to terms and conditions");
+      return;
+    }
+
+    // Prepare data matching schema
+    const teacherData = {
+      subjects: formData.subjects,
+      classes: formData.classes,
+      hourelyfee: Number(formData.hourelyfee),
+      location: formData.location,
+      bio: formData.bio,
+      mode: formData.mode,
+      education: formData.education.filter((e) => e.degree && e.institute),
+      experienceDetails: formData.experienceDetails.filter(
+        (exp) => exp.institution && exp.years,
+      ),
+      coordinates: coordinates
+        ? {
+            type: "Point",
+            coordinates: coordinates,
+          }
+        : null,
+    };
+
+    try {
+      const res = await api.post("user/registerteacher", teacherData);
+      console.log(res.data);
+      navigate("/", {
+        state: {
+          accountCreated: true,
+        },
+      });
+    } catch (error) {
+      alert(error);
+    }
+
     setSubmitted(true);
     setTimeout(() => {
       document
@@ -160,8 +370,10 @@ const user = useSelector((state)=>state.auth.user)
       <header className="border-b border-slate-100 bg-white sticky top-0 z-50">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10">
           <div className="flex items-center gap-3">
-            <div onClick={()=>navigate("/")} 
-            className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 shadow-lg">
+            <div
+              onClick={() => navigate("/")}
+              className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 shadow-lg cursor-pointer"
+            >
               <BookOpen className="h-6 w-6 text-amber-300" />
             </div>
             <div>
@@ -193,33 +405,36 @@ const user = useSelector((state)=>state.auth.user)
             })}
           </nav>
 
-         {user ? (
-                     <div onClick={()=>navigate("/login")} className="flex items-center gap-3 cursor-pointer">
-                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 text-sm font-bold text-white shadow-md">
-                         {user.name?.charAt(0)?.toUpperCase() || "U"}
-                       </div>
-                     </div>
-                   ) : (
-                     <>
-                       <div className="flex items-center gap-5 cursor-pointer">
-                         <a
-                           onClick={() => navigate("/login")}
-                           className="hidden items-center gap-1.5 text-sm font-medium text-slate-700 sm:flex hover:text-violet-600"
-                         >
-                           <ShieldCheck className="h-4 w-4" />
-                           Login
-                         </a>
-         
-                         <button
-                           onClick={() => navigate("/signup")}
-                           className="rounded-lg px-5 py-2.5 text-sm font-semibold text-white"
-                           style={{ backgroundColor: PURPLE }}
-                         >
-                           Sign Up
-                         </button>
-                       </div>
-                     </>
-                   )}
+          {user ? (
+            <div
+              onClick={() => navigate("/login")}
+              className="flex items-center gap-3 cursor-pointer"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 text-sm font-bold text-white shadow-md">
+                {user.name?.charAt(0)?.toUpperCase() || "U"}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-5 cursor-pointer">
+                <a
+                  onClick={() => navigate("/login")}
+                  className="hidden items-center gap-1.5 text-sm font-medium text-slate-700 sm:flex hover:text-violet-600"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Login
+                </a>
+
+                <button
+                  onClick={() => navigate("/signup")}
+                  className="rounded-lg px-5 py-2.5 text-sm font-semibold text-white"
+                  style={{ backgroundColor: PURPLE }}
+                >
+                  Sign Up
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </header>
 
@@ -373,14 +588,17 @@ const user = useSelector((state)=>state.auth.user)
             onSubmit={handleSubmit}
             className="rounded-2xl border border-slate-100 bg-white p-8 shadow-sm"
           >
-            {/* Row 1 */}
+            {/* Row 1 - Basic Info */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Full Name
+                  Full Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleInputChange}
                   placeholder="e.g. Priya Sharma"
                   required
                   className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
@@ -388,10 +606,13 @@ const user = useSelector((state)=>state.auth.user)
               </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Email Address
+                  Email Address <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
                   placeholder="yourname@email.com"
                   required
                   className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
@@ -407,133 +628,324 @@ const user = useSelector((state)=>state.auth.user)
                 </label>
                 <input
                   type="tel"
+                  name="phoneNumber"
+                  value={formData.phoneNumber}
+                  onChange={handleInputChange}
                   placeholder="+91 98765 43210"
                   className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                 />
               </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                  City / Location
+                  City / Location <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Meerut, Uttar Pradesh"
-                  className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleInputChange}
+                    placeholder="e.g. Meerut, Uttar Pradesh"
+                    required
+                    className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={getCoordinates}
+                    className="px-3 py-2.5 rounded-lg text-xs font-semibold text-white transition-colors"
+                    style={{ backgroundColor: PURPLE }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = PURPLE_DARK)
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = PURPLE)
+                    }
+                    title="Get your coordinates"
+                  >
+                    📍
+                  </button>
+                </div>
+                {coordinates && (
+                  <p className="mt-1 text-xs text-slate-400">
+                    Coordinates captured: {coordinates[1].toFixed(4)},{" "}
+                    {coordinates[0].toFixed(4)}
+                  </p>
+                )}
               </div>
             </div>
 
-            {/* Row 3 */}
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Subject(s) You Teach
-                </label>
-                <select
-                  required
-                  className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                >
-                  <option value="">Select primary subject</option>
-                  {[
-                    "Mathematics",
-                    "Physics",
-                    "Chemistry",
-                    "Biology",
-                    "English",
-                    "Computer Science",
-                    "History",
-                    "Geography",
-                    "Hindi",
-                    "Economics",
-                  ].map((s) => (
-                    <option key={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Years of Experience
-                </label>
-                <select className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
-                  <option value="">Select experience</option>
-                  {[
-                    "Less than 1 year",
-                    "1–3 years",
-                    "3–5 years",
-                    "5–10 years",
-                    "10+ years",
-                  ].map((x) => (
-                    <option key={x}>{x}</option>
-                  ))}
-                </select>
+            {/* Subjects - Multi-select */}
+            <div className="mt-4">
+              <label className="mb-2.5 block text-sm font-medium text-slate-700">
+                Subject(s) You Teach <span className="text-red-500">*</span>
+              </label>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {SUBJECTS.map((subject) => (
+                  <label
+                    key={subject}
+                    className="flex items-center gap-2 cursor-pointer rounded-lg border border-slate-200 px-3 py-2.5 transition hover:bg-slate-50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.subjects.includes(subject)}
+                      onChange={() => handleSubjectToggle(subject)}
+                      className="w-4 h-4 rounded accent-indigo-600"
+                    />
+                    <span className="text-sm text-slate-700">{subject}</span>
+                  </label>
+                ))}
               </div>
             </div>
 
-            {/* Row 4 */}
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Highest Qualification
-                </label>
-                <select className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
-                  <option value="">Select qualification</option>
-                  {[
-                    "12th Pass",
-                    "Diploma",
-                    "Bachelor's Degree",
-                    "Master's Degree",
-                    "B.Ed / M.Ed",
-                    "PhD",
-                  ].map((q) => (
-                    <option key={q}>{q}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Teaching Mode
-                </label>
-                <select className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
-                  <option value="">Select mode</option>
-                  {[
-                    "Home Visits (Student's Home)",
-                    "Home Tuition (My Home)",
-                    "Online Only",
-                    "Both Online & In-person",
-                  ].map((m) => (
-                    <option key={m}>{m}</option>
-                  ))}
-                </select>
+            {/* Classes - Multi-select */}
+            <div className="mt-4">
+              <label className="mb-2.5 block text-sm font-medium text-slate-700">
+                Classes/Grades You Teach <span className="text-red-500">*</span>
+              </label>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {CLASSES.map((cls) => (
+                  <label
+                    key={cls}
+                    className="flex items-center gap-2 cursor-pointer rounded-lg border border-slate-200 px-3 py-2.5 transition hover:bg-slate-50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.classes.includes(cls)}
+                      onChange={() => handleClassToggle(cls)}
+                      className="w-4 h-4 rounded accent-indigo-600"
+                    />
+                    <span className="text-sm text-slate-700">{cls}</span>
+                  </label>
+                ))}
               </div>
             </div>
 
-            {/* Hourly rate */}
+            {/* Teaching Mode - Multi-select */}
+            <div className="mt-4">
+              <label className="mb-2.5 block text-sm font-medium text-slate-700">
+                Teaching Mode <span className="text-red-500">*</span>
+              </label>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {TEACHING_MODES.map((mode) => (
+                  <label
+                    key={mode.value}
+                    className="flex items-center gap-2 cursor-pointer rounded-lg border border-slate-200 px-3 py-2.5 transition hover:bg-slate-50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.mode.includes(mode.value)}
+                      onChange={() => handleModeToggle(mode.value)}
+                      className="w-4 h-4 rounded accent-indigo-600"
+                    />
+                    <span className="text-sm text-slate-700">{mode.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Hourly Rate */}
             <div className="mt-4">
               <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                Expected Hourly Rate (₹)
+                Expected Hourly Rate (₹) <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
+                name="hourelyfee"
+                value={formData.hourelyfee}
+                onChange={handleInputChange}
                 placeholder="e.g. 500"
                 min="100"
                 step="50"
+                required
                 className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
               />
+            </div>
+
+            {/* Education Details */}
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-medium text-slate-700">
+                  Education Details
+                </label>
+                <button
+                  type="button"
+                  onClick={addEducationField}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white transition-colors"
+                  style={{ backgroundColor: PURPLE }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.backgroundColor = PURPLE_DARK)
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.backgroundColor = PURPLE)
+                  }
+                >
+                  + Add Education
+                </button>
+              </div>
+              {formData.education.map((edu, index) => (
+                <div
+                  key={index}
+                  className="mb-4 p-4 rounded-lg border border-slate-200 bg-slate-50"
+                >
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div>
+                      <label className="mb-1.5 block text-xs font-medium text-slate-600">
+                        Degree
+                      </label>
+                      <input
+                        type="text"
+                        value={edu.degree}
+                        onChange={(e) =>
+                          handleEducationChange(index, "degree", e.target.value)
+                        }
+                        placeholder="e.g. B.Sc, M.Sc"
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-xs font-medium text-slate-600">
+                        Institute
+                      </label>
+                      <input
+                        type="text"
+                        value={edu.institute}
+                        onChange={(e) =>
+                          handleEducationChange(
+                            index,
+                            "institute",
+                            e.target.value,
+                          )
+                        }
+                        placeholder="e.g. Delhi University"
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <label className="mb-1.5 block text-xs font-medium text-slate-600">
+                          Year
+                        </label>
+                        <input
+                          type="number"
+                          value={edu.year}
+                          onChange={(e) =>
+                            handleEducationChange(index, "year", e.target.value)
+                          }
+                          placeholder="2022"
+                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                        />
+                      </div>
+                      {formData.education.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeEducationField(index)}
+                          className="mt-6 flex items-center justify-center rounded-lg border border-slate-200 px-3 py-2 text-slate-600 hover:bg-red-50 hover:border-red-200 transition"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Experience Details */}
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-medium text-slate-700">
+                  Teaching Experience
+                </label>
+                <button
+                  type="button"
+                  onClick={addExperienceField}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white transition-colors"
+                  style={{ backgroundColor: PURPLE }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.backgroundColor = PURPLE_DARK)
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.backgroundColor = PURPLE)
+                  }
+                >
+                  + Add Experience
+                </button>
+              </div>
+              {formData.experienceDetails.map((exp, index) => (
+                <div
+                  key={index}
+                  className="mb-4 p-4 rounded-lg border border-slate-200 bg-slate-50"
+                >
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="sm:col-span-2">
+                      <label className="mb-1.5 block text-xs font-medium text-slate-600">
+                        Institution / Organization
+                      </label>
+                      <input
+                        type="text"
+                        value={exp.institution}
+                        onChange={(e) =>
+                          handleExperienceChange(
+                            index,
+                            "institution",
+                            e.target.value,
+                          )
+                        }
+                        placeholder="e.g. Delhi Public School"
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <label className="mb-1.5 block text-xs font-medium text-slate-600">
+                          Years
+                        </label>
+                        <input
+                          type="number"
+                          value={exp.years}
+                          onChange={(e) =>
+                            handleExperienceChange(
+                              index,
+                              "years",
+                              e.target.value,
+                            )
+                          }
+                          placeholder="2"
+                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                        />
+                      </div>
+                      {formData.experienceDetails.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeExperienceField(index)}
+                          className="mt-6 flex items-center justify-center rounded-lg border border-slate-200 px-3 py-2 text-slate-600 hover:bg-red-50 hover:border-red-200 transition"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* Bio */}
             <div className="mt-4">
               <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                Brief Introduction
+                Brief Introduction <span className="text-red-500">*</span>
               </label>
               <textarea
                 rows={4}
+                name="bio"
+                value={formData.bio}
+                onChange={handleInputChange}
                 placeholder="Tell students about yourself, your teaching style, and your achievements..."
+                required
                 className="w-full resize-none rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
               />
             </div>
 
-            {/* File upload */}
+            {/* File Upload */}
             <div className="mt-4">
               <label className="mb-1.5 block text-sm font-medium text-slate-700">
                 Upload Qualification / ID Proof
@@ -632,7 +1044,7 @@ const user = useSelector((state)=>state.auth.user)
               Submit Application <ArrowRight className="h-4 w-4" />
             </button>
 
-            {/* Success */}
+            {/* Success Message */}
             {submitted && (
               <div
                 id="success-msg"
@@ -705,16 +1117,15 @@ const user = useSelector((state)=>state.auth.user)
           </a>
         </div>
       </section>
-        {/* AI Tutor Assistant Button */}
+
+      {/* AI Tutor Assistant Button */}
       <button
         onClick={() => navigate("/chatbot")}
         className="fixed bottom-6 right-6 z-50 group"
       >
         <div className="relative">
-          {/* Blinking Ring */}
           <span className="absolute inset-0 rounded-full bg-violet-500 animate-ping opacity-30"></span>
 
-          {/* Hover Text */}
           <div className="absolute right-20 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-xl border border-violet-100 bg-white px-4 py-2 shadow-lg opacity-0 invisible translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:visible group-hover:translate-x-0">
             <p className="text-sm font-semibold text-slate-800">
               Talk to AI Teacher
@@ -722,7 +1133,6 @@ const user = useSelector((state)=>state.auth.user)
             <p className="text-xs text-slate-500">Ask doubts anytime</p>
           </div>
 
-          {/* Button */}
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 shadow-xl transition-all duration-300 hover:scale-110">
             <Brain className="h-8 w-8 text-amber-300" />
           </div>

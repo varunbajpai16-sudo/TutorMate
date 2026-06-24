@@ -4,7 +4,7 @@ import { useGoogleLogin } from "@react-oauth/google";
 import { useSelector, useDispatch } from "react-redux";
 import { loginSuccess, logout } from "../features/auth/auth.silice";
 import api from "../services/axios";
-import LoginLoader from "../components/Login_Loader"
+import LoginLoader from "../components/Login_Loader";
 import {
   GraduationCap,
   ShieldCheck,
@@ -92,7 +92,7 @@ export default function LoginPage() {
   const [showPopup, setShowPopup] = useState(false);
   const user = useSelector((state) => state.auth.user);
   const [loading, setLoading] = useState(false);
-
+  const [errorMessage, setErrorMessage] = useState("Already Logged In");
   const HandelLogout = () => {
     localStorage.clear("user");
     alert("User Logout Sucessfully");
@@ -111,12 +111,11 @@ export default function LoginPage() {
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        setLoading(true);
         const accessToken = tokenResponse.access_token;
         const response = await api.post("user/login", {
           accessToken,
         });
-        console.log(response);
+        setLoading(true);
         if (!response.data.data.newuser) {
           const loginuser = response.data.data.existingUser;
 
@@ -128,6 +127,9 @@ export default function LoginPage() {
               accessToken: null,
             }),
           );
+
+          alert("User Login Sucessfully");
+          navigate("/");
         } else {
           navigate("/rolechoose", {
             state: {
@@ -136,14 +138,15 @@ export default function LoginPage() {
           });
         }
       } catch (error) {
-        console.log(error);
+        const message =
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "Something went wrong. Please try again.";
+          setErrorMessage(message)
+          setShowPopup(true)
       } finally {
-         setTimeout(() => {
-            navigate("/")
-            setLoading(false);
-          },3000);
-      
-    }
+        setLoading(false);
+      }
     },
     onError: () => {
       console.log("Google Login Failed");
@@ -151,22 +154,17 @@ export default function LoginPage() {
   });
 
   if (loading) {
-  return <LoginLoader />;
-}
+    return <LoginLoader />;
+  }
 
   return (
     <div className="min-h-screen bg-white font-sans antialiased">
       {showPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="text-xl font-bold text-slate-900">
-              Already Logged In
+            <h2 className="text-xl font-bold text-slate-900 flex justify-center">
+             {errorMessage}
             </h2>
-
-            <p className="mt-2 text-slate-500">
-              You are already logged into your account.
-            </p>
-
             <button
               onClick={() => setShowPopup(false)}
               className="mt-4 w-full rounded-lg bg-violet-600 py-2 text-white"

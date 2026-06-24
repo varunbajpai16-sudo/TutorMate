@@ -447,6 +447,7 @@ export default function SubjectsPage() {
             <button
               className="rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-colors"
               style={{ backgroundColor: PURPLE }}
+              onClick={()=>navigate("/teacher")}
               onMouseEnter={(e) =>
                 (e.currentTarget.style.backgroundColor = PURPLE_DARK)
               }

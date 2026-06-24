@@ -1,5 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import api from "../services/axios"
 import {
   ArrowLeft,
   ArrowRight,
@@ -37,21 +39,19 @@ const subjectList = [
 ];
 
 export default function RegisterParentPage() {
+  const user = useSelector((state)=>state.auth.user)
   const navigate = useNavigate();
   const nextChildId = useRef(2);
 
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    password: "",
     confirmPassword: "",
     location: "",
   });
   const [children, setChildren] = useState([{ id: 1, name: "", class: "", subjects: [] }]);
   const [coordinates, setCoordinates] = useState(null); // [lng, lat]
   const [locationStatus, setLocationStatus] = useState("idle"); // idle | loading | success | error
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -112,10 +112,6 @@ export default function RegisterParentPage() {
     if (!formData.name.trim()) next.name = "Full name is required";
     if (!formData.email.trim()) next.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(formData.email)) next.email = "Enter a valid email";
-    if (!formData.password) next.password = "Password is required";
-    else if (formData.password.length < 6) next.password = "Use at least 6 characters";
-    if (formData.confirmPassword !== formData.password)
-      next.confirmPassword = "Passwords do not match";
 
     const childErrors = {};
     children.forEach((child) => {
@@ -135,34 +131,30 @@ export default function RegisterParentPage() {
   };
 
   const handleSubmit = async (e) => {
+    console.log("submit button")
     e.preventDefault();
     setSubmitError("");
-    if (!validate()) return;
-
+console.log("submit button")
     setSubmitting(true);
     try {
+      console.log("submit button")
       const payload = {
         name: formData.name,
         email: formData.email,
-        password: formData.password,
-        role: "parent",
         children: children.map(({ id, ...rest }) => rest),
         location: formData.location,
         coordinates: { type: "Point", coordinates },
       };
 
-      const res = await fetch("/api/auth/register/parent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const res = await api.post("user/registerparent",payload)
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || "Something went wrong. Please try again.");
-      }
-
-      navigate("/login");
+      
+        navigate("/", {
+          state: {
+            accountCreated: true,
+          },
+          
+        });
     } catch (err) {
       setSubmitError(err.message || "Something went wrong. Please try again.");
     } finally {
@@ -237,100 +229,6 @@ export default function RegisterParentPage() {
                   Account Details
                 </span>
 
-                <div className="mt-4 space-y-4">
-                  <div>
-                    <div className="relative flex items-center">
-                      <User className="pointer-events-none absolute left-3.5 h-4 w-4 text-slate-400" />
-                      <input
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        placeholder="Full name"
-                        className={`${inputBase} ${
-                          errors.name ? "border-rose-300" : "border-slate-200 focus:border-violet-400"
-                        }`}
-                      />
-                    </div>
-                    {errors.name && <p className="mt-1 text-xs text-rose-500">{errors.name}</p>}
-                  </div>
-
-                  <div>
-                    <div className="relative flex items-center">
-                      <Mail className="pointer-events-none absolute left-3.5 h-4 w-4 text-slate-400" />
-                      <input
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        placeholder="Email address"
-                        className={`${inputBase} ${
-                          errors.email ? "border-rose-300" : "border-slate-200 focus:border-violet-400"
-                        }`}
-                      />
-                    </div>
-                    {errors.email && <p className="mt-1 text-xs text-rose-500">{errors.email}</p>}
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <div className="relative flex items-center">
-                        <Lock className="pointer-events-none absolute left-3.5 h-4 w-4 text-slate-400" />
-                        <input
-                          name="password"
-                          type={showPassword ? "text" : "password"}
-                          value={formData.password}
-                          onChange={handleChange}
-                          placeholder="Password"
-                          className={`${inputBase} pr-10 ${
-                            errors.password ? "border-rose-300" : "border-slate-200 focus:border-violet-400"
-                          }`}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword((v) => !v)}
-                          className="absolute right-3.5 text-slate-400 hover:cursor-pointer hover:text-slate-600"
-                        >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                      {errors.password && (
-                        <p className="mt-1 text-xs text-rose-500">{errors.password}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <div className="relative flex items-center">
-                        <Lock className="pointer-events-none absolute left-3.5 h-4 w-4 text-slate-400" />
-                        <input
-                          name="confirmPassword"
-                          type={showConfirmPassword ? "text" : "password"}
-                          value={formData.confirmPassword}
-                          onChange={handleChange}
-                          placeholder="Confirm password"
-                          className={`${inputBase} pr-10 ${
-                            errors.confirmPassword
-                              ? "border-rose-300"
-                              : "border-slate-200 focus:border-violet-400"
-                          }`}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirmPassword((v) => !v)}
-                          className="absolute right-3.5 text-slate-400 hover:cursor-pointer hover:text-slate-600"
-                        >
-                          {showConfirmPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-                      {errors.confirmPassword && (
-                        <p className="mt-1 text-xs text-rose-500">{errors.confirmPassword}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
               </div>
 
               {/* Children */}
@@ -540,6 +438,7 @@ export default function RegisterParentPage() {
 
               <button
                 type="submit"
+                onClick={handleSubmit}
                 disabled={submitting}
                 className="flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition-colors disabled:opacity-60"
                 style={{ backgroundColor: PURPLE }}

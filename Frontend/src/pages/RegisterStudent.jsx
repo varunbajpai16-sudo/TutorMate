@@ -1,4 +1,4 @@
-import React, { useState,useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import api from "../services/axios";
@@ -69,7 +69,7 @@ export default function RegisterStudentPage() {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
-
+  const [showSuccessPopup, setShowSuccessPopup] = useState();
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -135,8 +135,13 @@ export default function RegisterStudentPage() {
           accountCreated: true,
         },
       });
-    } catch (err) {
-      setSubmitError(err.message || "Something went wrong. Please try again.");
+    } catch (error) {
+       const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "Something went wrong. Please try again.";
+      setSubmitError(message || "Something went wrong. Please try again.");
+      setShowSuccessPopup(true)
     } finally {
       setSubmitting(false);
     }
@@ -147,6 +152,37 @@ export default function RegisterStudentPage() {
 
   return (
     <div className="min-h-screen bg-white font-sans antialiased flex flex-col">
+      {showSuccessPopup && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
+            <div className="flex justify-center">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-amber-100">
+                <AlertCircle className="h-10 w-10 text-amber-600" />
+              </div>
+            </div>
+            <p className="mt-3 text-center text-slate-500">{submitError}</p>
+
+            <div className="mt-8 flex gap-3">
+              <button
+                onClick={() => setShowSuccessPopup(false)}
+                className="flex-1 rounded-xl border border-slate-200 px-5 py-3 font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Close
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowSuccessPopup(false);
+                  navigate("/login");
+                }}
+                className="flex-1 rounded-xl bg-violet-600 px-5 py-3 font-semibold text-white hover:bg-violet-700"
+              >
+                Login
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <header className="border-b border-slate-100 bg-white">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10">

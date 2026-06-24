@@ -18,7 +18,7 @@ import {
   Check,
   ShieldCheck,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 
 const PURPLE = "#6C5DD3";
@@ -58,6 +58,7 @@ export default function RoleSelectionPage() {
   const navigate = useNavigate();
   const [selectedRole, setSelectedRole] = useState(null);
   const location = useLocation();
+  const [errorMessage, setErrorMessage] = useState("");
   const accessToken = location.state;
   const [showSuccessPopup, setShowSuccessPopup] = useState();
   const dispatch = useDispatch();
@@ -81,9 +82,14 @@ export default function RoleSelectionPage() {
         console.log("User created sucessfull");
         navigate(`/${selectedRole}`);
         localStorage.setItem("user", JSON.stringify(user));
-        setShowSuccessPopup(true);
       }
     } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "Something went wrong. Please try again.";
+
+      setErrorMessage(message);
       setShowSuccessPopup(true);
       dispatch(loginFailure());
     }
@@ -100,14 +106,8 @@ export default function RoleSelectionPage() {
                 <AlertCircle className="h-10 w-10 text-amber-600" />
               </div>
             </div>
-
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900">
-              Account Already Exists
-            </h2>
-
             <p className="mt-3 text-center text-slate-500">
-              You have already registered as a student. You can continue using
-              your existing account to find teachers and manage your profile.
+             {errorMessage}
             </p>
 
             <div className="mt-8 flex gap-3">
@@ -125,7 +125,7 @@ export default function RoleSelectionPage() {
                 }}
                 className="flex-1 rounded-xl bg-violet-600 px-5 py-3 font-semibold text-white hover:bg-violet-700"
               >
-               Login
+                Login
               </button>
             </div>
           </div>
