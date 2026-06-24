@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://tutormate-pzpe.onrender.com",
+  baseURL: "https://tutormate-pzpe.onrender.com/api/v1/",
   withCredentials: true,
 });
 
