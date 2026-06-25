@@ -13,7 +13,7 @@ const router = Router();
 
 router.post('/createuser', upload.single('avatar'), createUser);
 router.post('/login', loginUser);
-router.post('/registerteacher', VerifyJwt, teacherRegistration);
+router.post('/registerteacher',upload.fields([ { name: "documents", maxCount: 5 } ]), VerifyJwt, teacherRegistration);
 router.post('/registerstudent', VerifyJwt, studentRegistration);
 router.post('/registerparent', VerifyJwt, RegisterParent);
 router.post("/getteacher",getNearbyTeachers)

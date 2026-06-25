@@ -199,10 +199,10 @@ export default function BecomeATeacher() {
 
   const [submitted, setSubmitted] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const [fileName, setFileName] = useState("");
+  const [files, setFiles] = useState([]);
   const [consent, setConsent] = useState(false);
   const [coordinates, setCoordinates] = useState(null);
-  const [loading,setloading] = useState(false);
+  const [loading, setloading] = useState(false);
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -372,25 +372,43 @@ export default function BecomeATeacher() {
     }
 
     // Prepare data matching schema
-    const teacherData = {
-      subjects: formData.subjects,
-      classes: formData.classes,
-      hourelyfee: Number(formData.hourelyfee),
-      location: formData.location,
-      bio: formData.bio,
-      mode: formData.mode,
-      education: formData.education.filter((e) => e.degree && e.institute),
-      experienceDetails: formData.experienceDetails.filter(
-        (exp) => exp.institution && exp.years,
+    const teacherData = new FormData();
+
+    teacherData.append("subjects", JSON.stringify(formData.subjects));
+    teacherData.append("classes", JSON.stringify(formData.classes));
+    teacherData.append("hourelyfee", Number(formData.hourelyfee));
+    teacherData.append("location", formData.location);
+    teacherData.append("bio", formData.bio);
+    teacherData.append("mode", JSON.stringify(formData.mode));
+
+    teacherData.append(
+      "education",
+      JSON.stringify(formData.education.filter((e) => e.degree && e.institute)),
+    );
+
+    teacherData.append(
+      "experienceDetails",
+      JSON.stringify(
+        formData.experienceDetails.filter(
+          (exp) => exp.institution && exp.years,
+        ),
       ),
-      coordinates: {
+    );
+
+    teacherData.append(
+      "coordinates",
+      JSON.stringify({
         type: "Point",
         coordinates,
-      },
-    };
+      }),
+    );
+
+    files.forEach((file) => {
+      teacherData.append("documents", file);
+    });
 
     try {
-      setloading(true)
+      setloading(true);
       const res = await api.post("user/registerteacher", teacherData);
       console.log(res.data);
       navigate("/", {
@@ -411,7 +429,9 @@ export default function BecomeATeacher() {
         ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }, 50);
   };
-
+  const removeFile = (indexToRemove) => {
+    setFiles(files.filter((_, index) => index !== indexToRemove));
+  };
   if (loading) {
     return <LoginLoader />;
   }
@@ -1011,8 +1031,13 @@ export default function BecomeATeacher() {
                 onDrop={(e) => {
                   e.preventDefault();
                   setDragOver(false);
-                  const file = e.dataTransfer.files?.[0];
-                  if (file) setFileName(file.name);
+
+                  if (e.dataTransfer.files.length > 0) {
+                    setFiles((prev) => [
+                      ...prev,
+                      ...Array.from(e.dataTransfer.files),
+                    ]);
+                  }
                 }}
                 className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-8 text-center transition ${
                   dragOver
@@ -1021,13 +1046,33 @@ export default function BecomeATeacher() {
                 }`}
               >
                 <Upload className="h-7 w-7 text-slate-400" />
-                {fileName ? (
-                  <span
-                    className="text-sm font-medium"
-                    style={{ color: PURPLE }}
-                  >
-                    {fileName}
-                  </span>
+                {files.length > 0 ? (
+                  <div className="w-full space-y-2">
+                    {files.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between rounded-lg bg-white px-3 py-2 shadow-sm border"
+                      >
+                        <span
+                          className="truncate text-sm font-medium"
+                          style={{ color: PURPLE }}
+                        >
+                          {file.name}
+                        </span>
+
+                        <span className="text-xs text-slate-500">
+                          {(file.size / 1024 / 1024).toFixed(2)} MB
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeFile(index)}
+                          className="text-red-500 hover:text-red-700 text-sm hover:cursor-pointer"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
                   <>
                     <span className="text-sm text-slate-500">
@@ -1045,10 +1090,15 @@ export default function BecomeATeacher() {
                   id="file-upload"
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png"
+                  multiple
                   className="sr-only"
                   onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) setFileName(file.name);
+                    if (e.target.files) {
+                      setFiles((prev) => [
+                        ...prev,
+                        ...Array.from(e.target.files),
+                      ]);
+                    }
                   }}
                 />
               </label>

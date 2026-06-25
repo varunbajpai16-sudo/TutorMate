@@ -151,36 +151,37 @@ const loginUser = AsyncHandler(async (req, res) => {
 });
 
 const teacherRegistration = AsyncHandler(async (req, res) => {
+  const { hourelyfee, location, bio } = req.body;
 
-  const {
-    subjects,
-    classes,
-    hourelyfee,
-    location,
-    bio,
-    mode,
-    education,
-    experienceDetails,
-    coordinates
-  } = req.body;
+  const subjects = JSON.parse(req.body.subjects);
+  const classes = JSON.parse(req.body.classes);
+  const mode = JSON.parse(req.body.mode);
+  const education = JSON.parse(req.body.education);
+  const experienceDetails = JSON.parse(req.body.experienceDetails);
+  const coordinates = JSON.parse(req.body.coordinates);
+
+  const rawDocuments = req.files?.documents || [];
+
+const uploadedDocuments = await Promise.all(
+  rawDocuments.map(async (doc) => {
+    const result = await uploadToCloudinary(doc.path);
+    return result.secure_url;
+  })
+);
 
   if (!Array.isArray(subjects) || subjects.length === 0) {
-    
     throw new ApiError(400, 'Subjects must be a non-empty array');
   }
 
   if (!classes || !hourelyfee || !location || !mode) {
-    
     throw new ApiError(400, 'All Fields are Required');
   }
 
   if (!Array.isArray(experienceDetails) || experienceDetails.length === 0) {
-    
     throw new ApiError(400, 'Experience details are required');
   }
 
   if (!Array.isArray(education) || education.length === 0) {
-    
     throw new ApiError(400, 'Education details are required');
   }
 
@@ -189,7 +190,7 @@ const teacherRegistration = AsyncHandler(async (req, res) => {
   if (user) {
     throw new ApiError(404, 'Teacher Already Exist');
   }
-console.log("teacher")
+  
 
   const teacher = await Teacher.create({
     userid: req.user._id,
@@ -201,10 +202,11 @@ console.log("teacher")
     mode,
     education,
     experienceDetails,
-    coordinates
+    coordinates,
+    documents: uploadedDocuments,
   });
- 
-console.log(teacher)
+
+
 
   if (!teacher) {
     throw new ApiError(401, 'Internal Server Error While Registring Teacher ');
@@ -250,7 +252,7 @@ const studentRegistration = AsyncHandler(async (req, res) => {
 });
 
 const RegisterParent = AsyncHandler(async (req, res) => {
-  console.log(req.body)
+  console.log(req.body);
   const { children, location, coordinates } = req.body;
 
   if (!Array.isArray(children) || children.length === 0) {
@@ -266,14 +268,14 @@ const RegisterParent = AsyncHandler(async (req, res) => {
   if (user) {
     throw new ApiError(409, 'Parent already exists');
   }
-console.log("there")
+  console.log('there');
   const parent = await Parent.create({
     children,
     location,
     userid: req.user._id,
-    coordinates
+    coordinates,
   });
-console.log(parent)
+  console.log(parent);
   return res
     .status(201)
     .json(new Apireponse(201, 'Parent Registered Successfully', parent));

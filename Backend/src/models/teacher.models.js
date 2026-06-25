@@ -72,6 +72,10 @@ const teacherSchema = new mongoose.Schema({
       years: Number,
     },
   ],
+  documents:{
+    type:[String],
+    required:true
+  }
   
 });
 

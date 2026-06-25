@@ -10,12 +10,10 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 })
 export const uploadToCloudinary = async (localfilepath) => {
-  console.log(cloudinary.config());
   try {
     const response = await cloudinary.uploader.upload(localfilepath, {
       resource_type: 'auto',
     })
-    console.log(response);
     const absolutePath = path.resolve(localfilepath)
     fs.unlinkSync(absolutePath)
     console.log('File deleted successfully')

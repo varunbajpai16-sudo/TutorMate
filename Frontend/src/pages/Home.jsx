@@ -474,6 +474,19 @@ function HeroIllustration() {
 export default function TutorMateHomepage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const startserver = async () => {
+    try {
+      const res = await fetch("https://tutormate-pzpe.onrender.com/api/v1/");
+      console.log("Server Started");
+    } catch (error) {
+      console.log("Server Not Working", error);
+    }
+  };
+
+  useEffect(() => {
+    startserver();
+  }, []);
+
   const [showSuccessPopup, setShowSuccessPopup] = useState(
     location.state?.accountCreated || false,
   );
@@ -486,20 +499,20 @@ export default function TutorMateHomepage() {
   }, [location]);
   const [selectedSubjects, setSelectedSubjects] = useState([]);
 
-const [loading, setLoading] = useState(
-  !sessionStorage.getItem("homepageLoaded")
-);
+  const [loading, setLoading] = useState(
+    !sessionStorage.getItem("homepageLoaded"),
+  );
 
-useEffect(() => {
-  if (!loading) return;
+  useEffect(() => {
+    if (!loading) return;
 
-  const timer = setTimeout(() => {
-    sessionStorage.setItem("homepageLoaded", "true");
-    setLoading(false);
-  }, 4000);
+    const timer = setTimeout(() => {
+      sessionStorage.setItem("homepageLoaded", "true");
+      setLoading(false);
+    }, 4000);
 
-  return () => clearTimeout(timer);
-}, [loading]);
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   if (loading) {
     return <HomePageLoader />;
