@@ -496,7 +496,7 @@ useEffect(() => {
   const timer = setTimeout(() => {
     sessionStorage.setItem("homepageLoaded", "true");
     setLoading(false);
-  }, 2000);
+  }, 4000);
 
   return () => clearTimeout(timer);
 }, [loading]);

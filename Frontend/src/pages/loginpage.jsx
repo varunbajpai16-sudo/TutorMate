@@ -112,10 +112,10 @@ export default function LoginPage() {
     onSuccess: async (tokenResponse) => {
       try {
         const accessToken = tokenResponse.access_token;
+        setLoading(true);
         const response = await api.post("user/login", {
           accessToken,
         });
-        setLoading(true);
         if (!response.data.data.newuser) {
           const loginuser = response.data.data.existingUser;
 
@@ -138,6 +138,7 @@ export default function LoginPage() {
           });
         }
       } catch (error) {
+        setLoading(false)
         const message =
           error?.response?.data?.message ||
           error?.response?.data?.error ||

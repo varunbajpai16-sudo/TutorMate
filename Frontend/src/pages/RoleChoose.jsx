@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { useSelector } from "react-redux";
 import { useLocation } from "react-router-dom";
+import LoginLoader from "../components/Login_Loader";
 import {
   loginStart,
   loginSuccess,
@@ -60,12 +61,14 @@ export default function RoleSelectionPage() {
   const location = useLocation();
   const [errorMessage, setErrorMessage] = useState("");
   const accessToken = location.state;
+   const [loading, setLoading] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState();
   const dispatch = useDispatch();
   const handleContinue = async () => {
     try {
       dispatch(loginStart());
       const role = selectedRole;
+      setLoading(true);
       const response = await api.post("user/createuser", {
         accessToken: accessToken.accessToken.access_token,
         role,
@@ -84,6 +87,7 @@ export default function RoleSelectionPage() {
         localStorage.setItem("user", JSON.stringify(user));
       }
     } catch (error) {
+      setLoading(false)
       const message =
         error?.response?.data?.message ||
         error?.response?.data?.error ||
@@ -95,6 +99,10 @@ export default function RoleSelectionPage() {
     }
     if (!selectedRole) return;
   };
+
+   if (loading) {
+      return <LoginLoader />;
+    }
 
   return (
     <div className="min-h-screen bg-white font-sans antialiased flex flex-col">
