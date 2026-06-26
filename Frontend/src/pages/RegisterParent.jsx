@@ -174,7 +174,7 @@ export default function RegisterParentPage() {
       };
       dispatch(parentRequest());
       const res = await api.post("user/registerparent", payload);
-      localStorage.setItem("parent", JSON.stringify(res.data));
+      localStorage.setItem("parent", JSON.stringify(res.data.data));
       dispatch(parentSuccess());
       navigate("/", {
         state: {

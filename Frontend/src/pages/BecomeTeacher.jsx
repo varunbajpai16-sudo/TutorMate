@@ -425,7 +425,7 @@ export default function BecomeATeacher() {
       setloading(true);
       dispatch(teacherRequest());
       const res = await api.post("user/registerteacher", teacherData);
-      localStorage.setItem("teacher", JSON.stringify(res.data));
+      localStorage.setItem("teacher", JSON.stringify(res.data.data));
       dispatch(teacherSuccess(res.data));
       navigate("/", {
         state: {

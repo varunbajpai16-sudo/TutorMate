@@ -139,7 +139,7 @@ export default function RegisterStudentPage() {
       };
       dispatch(studentRequest())
       const res = await api.post("user/registerstudent", payload);
-      localStorage.setItem("student", JSON.stringify(res.data))
+      localStorage.setItem("student", JSON.stringify(res.data.data))
       dispatch(studentSuccess());
       navigate("/", {
         state: {
