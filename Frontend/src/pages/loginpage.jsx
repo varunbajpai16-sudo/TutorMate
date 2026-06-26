@@ -94,6 +94,19 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("Already Logged In");
   const HandelLogout = () => {
+    
+    if (user?.role === "teacher") {
+      localStorage.clear("teacher");
+    }
+
+    if (user?.role === "student") {
+      localStorage.clear("student");
+    }
+
+    if (user?.role === "parent") {
+      localStorage.clear("parent");
+    }
+
     localStorage.clear("user");
     alert("User Logout Sucessfully");
     dispatch(logout());
@@ -138,13 +151,13 @@ export default function LoginPage() {
           });
         }
       } catch (error) {
-        setLoading(false)
+        setLoading(false);
         const message =
           error?.response?.data?.message ||
           error?.response?.data?.error ||
           "Something went wrong. Please try again.";
-          setErrorMessage(message)
-          setShowPopup(true)
+        setErrorMessage(message);
+        setShowPopup(true);
       } finally {
         setLoading(false);
       }
@@ -164,7 +177,7 @@ export default function LoginPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
             <h2 className="text-xl font-bold text-slate-900 flex justify-center">
-             {errorMessage}
+              {errorMessage}
             </h2>
             <button
               onClick={() => setShowPopup(false)}

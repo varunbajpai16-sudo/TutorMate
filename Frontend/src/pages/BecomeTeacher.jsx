@@ -1,7 +1,15 @@
 import { useState } from "react";
 import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import {
+  teacherRequest,
+  teacherSuccess,
+  teacherFailure,
+  updateTeacher,
+  verifyTeacher,
+  clearTeacher,
+} from "../features/Teacher/Teacher_slice";
 import api from "../services/axios";
 import LoginLoader from "../components/Login_Loader";
 import {
@@ -181,7 +189,7 @@ export default function BecomeATeacher() {
   const navigate = useNavigate();
   const location = useLocation();
   const user = useSelector((state) => state.auth.user);
-
+  const dispatch = useDispatch();
   // Form state aligned with schema
   const [formData, setFormData] = useState({
     fullName: "",
@@ -203,6 +211,14 @@ export default function BecomeATeacher() {
   const [consent, setConsent] = useState(false);
   const [coordinates, setCoordinates] = useState(null);
   const [loading, setloading] = useState(false);
+  const teacher = useSelector((state) => state.teacher.teacher);
+  const storedTeacher = localStorage.getItem("teacher");
+  const teacherexist = storedTeacher && storedTeacher !== "undefined";
+  const initials = user?.name
+    ?.split(" ")
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase();
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -353,8 +369,6 @@ export default function BecomeATeacher() {
 
     // Validate required fields
     if (
-      !formData.fullName ||
-      !formData.email ||
       !formData.location ||
       formData.subjects.length === 0 ||
       formData.classes.length === 0 ||
@@ -409,8 +423,10 @@ export default function BecomeATeacher() {
 
     try {
       setloading(true);
+      dispatch(teacherRequest());
       const res = await api.post("user/registerteacher", teacherData);
-      console.log(res.data);
+      localStorage.setItem("teacher", JSON.stringify(res.data));
+      dispatch(teacherSuccess(res.data));
       navigate("/", {
         state: {
           accountCreated: true,
@@ -418,6 +434,7 @@ export default function BecomeATeacher() {
       });
       setloading(false);
     } catch (error) {
+      dispatch(teacherFailure());
       setloading(false);
       alert(error);
     }
@@ -643,521 +660,599 @@ export default function BecomeATeacher() {
         </div>
       </section>
 
-      {/* ── APPLICATION FORM ── */}
-      <section id="apply" className="px-6 py-16">
-        <div className="mx-auto max-w-2xl lg:px-0">
-          <div className="mb-10 text-center">
-            <h2 className="text-3xl font-extrabold text-slate-900">
-              Apply to become a teacher
-            </h2>
-            <p className="mt-3 text-base text-slate-500">
-              Fill in the details below and we'll get back to you within 48
-              hours.
-            </p>
-          </div>
+      {teacherexist ? (
+        <section id="apply" className="px-6 py-16">
+          <div className="mx-auto max-w-2xl">
+            <div className="rounded-2xl border border-emerald-200 bg-white p-8 shadow-sm relative overflow-hidden">
+              {/* Green accent strip */}
+              <div className="absolute top-0 left-0 bottom-0 w-1 bg-emerald-500 rounded-l-2xl" />
 
-          <form
-            onSubmit={handleSubmit}
-            className="rounded-2xl border border-slate-100 bg-white p-8 shadow-sm"
-          >
-            {/* Row 1 - Basic Info */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Full Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleInputChange}
-                  placeholder="e.g. Priya Sharma"
-                  required
-                  className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Email Address <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="yourname@email.com"
-                  required
-                  className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                />
-              </div>
-            </div>
-
-            {/* Row 2 */}
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  name="phoneNumber"
-                  value={formData.phoneNumber}
-                  onChange={handleInputChange}
-                  placeholder="+91 98765 43210"
-                  className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                  City / Location <span className="text-red-500">*</span>
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    name="location"
-                    value={formData.location}
-                    readOnly
-                    placeholder="Detecting location..."
-                    required
-                    className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                  />
-                  <button
-                    type="button"
-                    onClick={getCoordinates}
-                    className="px-3 py-2.5 rounded-lg text-xs font-semibold text-white transition-colors"
-                    style={{ backgroundColor: PURPLE }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.backgroundColor = PURPLE_DARK)
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.backgroundColor = PURPLE)
-                    }
-                    title="Get your coordinates"
-                  >
-                    📍
-                  </button>
+              <div className="flex items-start gap-4 pl-2">
+                <div className="flex-shrink-0 h-11 w-11 rounded-full bg-emerald-50 flex items-center justify-center">
+                  <CheckCircle className="h-6 w-6 text-emerald-500" />
                 </div>
-                {coordinates && (
-                  <p className="mt-1 text-xs text-slate-400">
-                    Coordinates captured: {coordinates[1].toFixed(4)},{" "}
-                    {coordinates[0].toFixed(4)}
+
+                <div className="flex-1">
+                  <h3 className="text-base font-semibold text-slate-900">
+                    You're already registered as a teacher
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Your profile is live on TutorMate. Students can already find
+                    and connect with you.
                   </p>
-                )}
-              </div>
-            </div>
 
-            {/* Subjects - Multi-select */}
-            <div className="mt-4">
-              <label className="mb-2.5 block text-sm font-medium text-slate-700">
-                Subject(s) You Teach <span className="text-red-500">*</span>
-              </label>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {SUBJECTS.map((subject) => (
-                  <label
-                    key={subject}
-                    className="flex items-center gap-2 cursor-pointer rounded-lg border border-slate-200 px-3 py-2.5 transition hover:bg-slate-50"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.subjects.includes(subject)}
-                      onChange={() => handleSubjectToggle(subject)}
-                      className="w-4 h-4 rounded accent-indigo-600"
-                    />
-                    <span className="text-sm text-slate-700">{subject}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Classes - Multi-select */}
-            <div className="mt-4">
-              <label className="mb-2.5 block text-sm font-medium text-slate-700">
-                Classes/Grades You Teach <span className="text-red-500">*</span>
-              </label>
-              <div className="grid gap-2 sm:grid-cols-3">
-                {CLASSES.map((cls) => (
-                  <label
-                    key={cls}
-                    className="flex items-center gap-2 cursor-pointer rounded-lg border border-slate-200 px-3 py-2.5 transition hover:bg-slate-50"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.classes.includes(cls)}
-                      onChange={() => handleClassToggle(cls)}
-                      className="w-4 h-4 rounded accent-indigo-600"
-                    />
-                    <span className="text-sm text-slate-700">{cls}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Teaching Mode - Multi-select */}
-            <div className="mt-4">
-              <label className="mb-2.5 block text-sm font-medium text-slate-700">
-                Teaching Mode <span className="text-red-500">*</span>
-              </label>
-              <div className="grid gap-2 sm:grid-cols-3">
-                {TEACHING_MODES.map((mode) => (
-                  <label
-                    key={mode.value}
-                    className="flex items-center gap-2 cursor-pointer rounded-lg border border-slate-200 px-3 py-2.5 transition hover:bg-slate-50"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.mode.includes(mode.value)}
-                      onChange={() => handleModeToggle(mode.value)}
-                      className="w-4 h-4 rounded accent-indigo-600"
-                    />
-                    <span className="text-sm text-slate-700">{mode.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Hourly Rate */}
-            <div className="mt-4">
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                Expected Hourly Rate (₹) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                name="hourelyfee"
-                value={formData.hourelyfee}
-                onChange={handleInputChange}
-                placeholder="e.g. 500"
-                min="100"
-                step="50"
-                required
-                className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-              />
-            </div>
-
-            {/* Education Details */}
-            <div className="mt-6">
-              <div className="flex items-center justify-between mb-3">
-                <label className="block text-sm font-medium text-slate-700">
-                  Education Details
-                </label>
-                <button
-                  type="button"
-                  onClick={addEducationField}
-                  className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white transition-colors"
-                  style={{ backgroundColor: PURPLE }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.backgroundColor = PURPLE_DARK)
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.backgroundColor = PURPLE)
-                  }
-                >
-                  + Add Education
-                </button>
-              </div>
-              {formData.education.map((edu, index) => (
-                <div
-                  key={index}
-                  className="mb-4 p-4 rounded-lg border border-slate-200 bg-slate-50"
-                >
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <div>
-                      <label className="mb-1.5 block text-xs font-medium text-slate-600">
-                        Degree
-                      </label>
-                      <input
-                        type="text"
-                        value={edu.degree}
-                        onChange={(e) =>
-                          handleEducationChange(index, "degree", e.target.value)
-                        }
-                        placeholder="e.g. B.Sc, M.Sc"
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                      />
+                  {/* Mini profile card */}
+                  <div className="mt-4 flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 text-sm font-bold text-white flex-shrink-0">
+                      {initials}
                     </div>
-                    <div>
-                      <label className="mb-1.5 block text-xs font-medium text-slate-600">
-                        Institute
-                      </label>
-                      <input
-                        type="text"
-                        value={edu.institute}
-                        onChange={(e) =>
-                          handleEducationChange(
-                            index,
-                            "institute",
-                            e.target.value,
-                          )
-                        }
-                        placeholder="e.g. Delhi University"
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                      />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-900">
+                        {user?.name}
+                      </p>
+                      <p className="text-xs text-slate-400 truncate">
+                        {teacher?.subjects?.join(" · ")}
+                      </p>
                     </div>
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <label className="mb-1.5 block text-xs font-medium text-slate-600">
-                          Year
-                        </label>
-                        <input
-                          type="number"
-                          value={edu.year}
-                          onChange={(e) =>
-                            handleEducationChange(index, "year", e.target.value)
-                          }
-                          placeholder="2022"
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                        />
-                      </div>
-                      {formData.education.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeEducationField(index)}
-                          className="mt-6 flex items-center justify-center rounded-lg border border-slate-200 px-3 py-2 text-slate-600 hover:bg-red-50 hover:border-red-200 transition"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
+                    <span className="text-xs font-medium bg-emerald-50 text-emerald-700 rounded-full px-3 py-1">
+                      Active
+                    </span>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="mt-5 flex gap-3 flex-wrap">
+                    <button
+                      onClick={() => navigate("/teacher/profile/edit")}
+                      className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white"
+                      style={{ backgroundColor: "#10b981" }}
+                    >
+                     Edit profile  
+                    </button>
+                    <button
+                      onClick={() => navigate("/teacher/dashboard")}
+                      className="flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                    >
+                      <Users className="h-4 w-4" /> View enquiries
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
-
-            {/* Experience Details */}
-            <div className="mt-6">
-              <div className="flex items-center justify-between mb-3">
-                <label className="block text-sm font-medium text-slate-700">
-                  Teaching Experience
-                </label>
-                <button
-                  type="button"
-                  onClick={addExperienceField}
-                  className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white transition-colors"
-                  style={{ backgroundColor: PURPLE }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.backgroundColor = PURPLE_DARK)
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.backgroundColor = PURPLE)
-                  }
-                >
-                  + Add Experience
-                </button>
               </div>
-              {formData.experienceDetails.map((exp, index) => (
-                <div
-                  key={index}
-                  className="mb-4 p-4 rounded-lg border border-slate-200 bg-slate-50"
-                >
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <div className="sm:col-span-2">
-                      <label className="mb-1.5 block text-xs font-medium text-slate-600">
-                        Institution / Organization
-                      </label>
-                      <input
-                        type="text"
-                        value={exp.institution}
-                        onChange={(e) =>
-                          handleExperienceChange(
-                            index,
-                            "institution",
-                            e.target.value,
-                          )
-                        }
-                        placeholder="e.g. Delhi Public School"
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <label className="mb-1.5 block text-xs font-medium text-slate-600">
-                          Years
-                        </label>
-                        <input
-                          type="number"
-                          value={exp.years}
-                          onChange={(e) =>
-                            handleExperienceChange(
-                              index,
-                              "years",
-                              e.target.value,
-                            )
-                          }
-                          placeholder="2"
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                        />
-                      </div>
-                      {formData.experienceDetails.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeExperienceField(index)}
-                          className="mt-6 flex items-center justify-center rounded-lg border border-slate-200 px-3 py-2 text-slate-600 hover:bg-red-50 hover:border-red-200 transition"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
             </div>
+          </div>
+        </section>
+      ) : (
+        <>
+          <section id="apply" className="px-6 py-16">
+            <div className="mx-auto max-w-2xl lg:px-0">
+              <div className="mb-10 text-center">
+                <h2 className="text-3xl font-extrabold text-slate-900">
+                  Apply to become a teacher
+                </h2>
+                <p className="mt-3 text-base text-slate-500">
+                  Fill in the details below and we'll get back to you within 48
+                  hours.
+                </p>
+              </div>
 
-            {/* Bio */}
-            <div className="mt-4">
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                Brief Introduction <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                rows={4}
-                name="bio"
-                value={formData.bio}
-                onChange={handleInputChange}
-                placeholder="Tell students about yourself, your teaching style, and your achievements..."
-                required
-                className="w-full resize-none rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-              />
-            </div>
-
-            {/* File Upload */}
-            <div className="mt-4">
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                Upload Qualification / ID Proof
-              </label>
-              <label
-                htmlFor="file-upload"
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOver(true);
-                }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setDragOver(false);
-
-                  if (e.dataTransfer.files.length > 0) {
-                    setFiles((prev) => [
-                      ...prev,
-                      ...Array.from(e.dataTransfer.files),
-                    ]);
-                  }
-                }}
-                className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-8 text-center transition ${
-                  dragOver
-                    ? "border-indigo-400 bg-indigo-50"
-                    : "border-slate-200 bg-slate-50 hover:border-indigo-300 hover:bg-indigo-50/40"
-                }`}
+              <form
+                onSubmit={handleSubmit}
+                className="rounded-2xl border border-slate-100 bg-white p-8 shadow-sm"
               >
-                <Upload className="h-7 w-7 text-slate-400" />
-                {files.length > 0 ? (
-                  <div className="w-full space-y-2">
-                    {files.map((file, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between rounded-lg bg-white px-3 py-2 shadow-sm border"
-                      >
-                        <span
-                          className="truncate text-sm font-medium"
-                          style={{ color: PURPLE }}
-                        >
-                          {file.name}
-                        </span>
+                {/* Row 1 - Basic Info */}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                      Full Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="fullName"
+                      value={user?.name}
+                      placeholder="e.g. Priya Sharma"
+                      required
+                      className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                      Email Address <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={user?.email}
+                      placeholder="yourname@email.com"
+                      required
+                      className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                    />
+                  </div>
+                </div>
 
-                        <span className="text-xs text-slate-500">
-                          {(file.size / 1024 / 1024).toFixed(2)} MB
+                {/* Row 2 */}
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      name="phoneNumber"
+                      value={formData.phoneNumber}
+                      onChange={handleInputChange}
+                      placeholder="+91 98765 43210"
+                      className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                      City / Location <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        name="location"
+                        value={formData.location}
+                        readOnly
+                        placeholder="Detecting location..."
+                        required
+                        className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                      />
+                      <button
+                        type="button"
+                        onClick={getCoordinates}
+                        className="px-3 py-2.5 rounded-lg text-xs font-semibold text-white transition-colors"
+                        style={{ backgroundColor: PURPLE }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.backgroundColor = PURPLE_DARK)
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.backgroundColor = PURPLE)
+                        }
+                        title="Get your coordinates"
+                      >
+                        📍
+                      </button>
+                    </div>
+                    {coordinates && (
+                      <p className="mt-1 text-xs text-slate-400">
+                        Coordinates captured: {coordinates[1].toFixed(4)},{" "}
+                        {coordinates[0].toFixed(4)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Subjects - Multi-select */}
+                <div className="mt-4">
+                  <label className="mb-2.5 block text-sm font-medium text-slate-700">
+                    Subject(s) You Teach <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {SUBJECTS.map((subject) => (
+                      <label
+                        key={subject}
+                        className="flex items-center gap-2 cursor-pointer rounded-lg border border-slate-200 px-3 py-2.5 transition hover:bg-slate-50"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.subjects.includes(subject)}
+                          onChange={() => handleSubjectToggle(subject)}
+                          className="w-4 h-4 rounded accent-indigo-600"
+                        />
+                        <span className="text-sm text-slate-700">
+                          {subject}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => removeFile(index)}
-                          className="text-red-500 hover:text-red-700 text-sm hover:cursor-pointer"
-                        >
-                          ✕
-                        </button>
-                      </div>
+                      </label>
                     ))}
                   </div>
-                ) : (
-                  <>
-                    <span className="text-sm text-slate-500">
-                      Drag & drop files here, or{" "}
-                      <span style={{ color: PURPLE }} className="font-medium">
-                        browse
-                      </span>
-                    </span>
-                    <span className="text-xs text-slate-400">
-                      PDF, JPG, PNG up to 5 MB
-                    </span>
-                  </>
-                )}
-                <input
-                  id="file-upload"
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  multiple
-                  className="sr-only"
-                  onChange={(e) => {
-                    if (e.target.files) {
-                      setFiles((prev) => [
-                        ...prev,
-                        ...Array.from(e.target.files),
-                      ]);
-                    }
-                  }}
-                />
-              </label>
-            </div>
+                </div>
 
-            {/* Consent */}
-            <div className="mt-5 flex items-start gap-3">
-              <input
-                id="consent"
-                type="checkbox"
-                checked={consent}
-                onChange={(e) => setConsent(e.target.checked)}
-                className="mt-0.5 h-4 w-4 flex-shrink-0 cursor-pointer rounded accent-indigo-600"
-              />
-              <label
-                htmlFor="consent"
-                className="cursor-pointer text-sm leading-relaxed text-slate-500"
-              >
-                I agree to the{" "}
-                <a
-                  href="#"
-                  style={{ color: PURPLE }}
-                  className="font-medium hover:underline"
+                {/* Classes - Multi-select */}
+                <div className="mt-4">
+                  <label className="mb-2.5 block text-sm font-medium text-slate-700">
+                    Classes/Grades You Teach{" "}
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    {CLASSES.map((cls) => (
+                      <label
+                        key={cls}
+                        className="flex items-center gap-2 cursor-pointer rounded-lg border border-slate-200 px-3 py-2.5 transition hover:bg-slate-50"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.classes.includes(cls)}
+                          onChange={() => handleClassToggle(cls)}
+                          className="w-4 h-4 rounded accent-indigo-600"
+                        />
+                        <span className="text-sm text-slate-700">{cls}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Teaching Mode - Multi-select */}
+                <div className="mt-4">
+                  <label className="mb-2.5 block text-sm font-medium text-slate-700">
+                    Teaching Mode <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    {TEACHING_MODES.map((mode) => (
+                      <label
+                        key={mode.value}
+                        className="flex items-center gap-2 cursor-pointer rounded-lg border border-slate-200 px-3 py-2.5 transition hover:bg-slate-50"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.mode.includes(mode.value)}
+                          onChange={() => handleModeToggle(mode.value)}
+                          className="w-4 h-4 rounded accent-indigo-600"
+                        />
+                        <span className="text-sm text-slate-700">
+                          {mode.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Hourly Rate */}
+                <div className="mt-4">
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                    Expected Hourly Rate (₹){" "}
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="hourelyfee"
+                    value={formData.hourelyfee}
+                    onChange={handleInputChange}
+                    placeholder="e.g. 500"
+                    min="100"
+                    step="50"
+                    required
+                    className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  />
+                </div>
+
+                {/* Education Details */}
+                <div className="mt-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="block text-sm font-medium text-slate-700">
+                      Education Details
+                    </label>
+                    <button
+                      type="button"
+                      onClick={addEducationField}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white transition-colors"
+                      style={{ backgroundColor: PURPLE }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor = PURPLE_DARK)
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = PURPLE)
+                      }
+                    >
+                      + Add Education
+                    </button>
+                  </div>
+                  {formData.education.map((edu, index) => (
+                    <div
+                      key={index}
+                      className="mb-4 p-4 rounded-lg border border-slate-200 bg-slate-50"
+                    >
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div>
+                          <label className="mb-1.5 block text-xs font-medium text-slate-600">
+                            Degree
+                          </label>
+                          <input
+                            type="text"
+                            value={edu.degree}
+                            onChange={(e) =>
+                              handleEducationChange(
+                                index,
+                                "degree",
+                                e.target.value,
+                              )
+                            }
+                            placeholder="e.g. B.Sc, M.Sc"
+                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1.5 block text-xs font-medium text-slate-600">
+                            Institute
+                          </label>
+                          <input
+                            type="text"
+                            value={edu.institute}
+                            onChange={(e) =>
+                              handleEducationChange(
+                                index,
+                                "institute",
+                                e.target.value,
+                              )
+                            }
+                            placeholder="e.g. Delhi University"
+                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <div className="flex-1">
+                            <label className="mb-1.5 block text-xs font-medium text-slate-600">
+                              Year
+                            </label>
+                            <input
+                              type="number"
+                              value={edu.year}
+                              onChange={(e) =>
+                                handleEducationChange(
+                                  index,
+                                  "year",
+                                  e.target.value,
+                                )
+                              }
+                              placeholder="2022"
+                              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                            />
+                          </div>
+                          {formData.education.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeEducationField(index)}
+                              className="mt-6 flex items-center justify-center rounded-lg border border-slate-200 px-3 py-2 text-slate-600 hover:bg-red-50 hover:border-red-200 transition"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Experience Details */}
+                <div className="mt-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="block text-sm font-medium text-slate-700">
+                      Teaching Experience
+                    </label>
+                    <button
+                      type="button"
+                      onClick={addExperienceField}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white transition-colors"
+                      style={{ backgroundColor: PURPLE }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor = PURPLE_DARK)
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = PURPLE)
+                      }
+                    >
+                      + Add Experience
+                    </button>
+                  </div>
+                  {formData.experienceDetails.map((exp, index) => (
+                    <div
+                      key={index}
+                      className="mb-4 p-4 rounded-lg border border-slate-200 bg-slate-50"
+                    >
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="sm:col-span-2">
+                          <label className="mb-1.5 block text-xs font-medium text-slate-600">
+                            Institution / Organization
+                          </label>
+                          <input
+                            type="text"
+                            value={exp.institution}
+                            onChange={(e) =>
+                              handleExperienceChange(
+                                index,
+                                "institution",
+                                e.target.value,
+                              )
+                            }
+                            placeholder="e.g. Delhi Public School"
+                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <div className="flex-1">
+                            <label className="mb-1.5 block text-xs font-medium text-slate-600">
+                              Years
+                            </label>
+                            <input
+                              type="number"
+                              value={exp.years}
+                              onChange={(e) =>
+                                handleExperienceChange(
+                                  index,
+                                  "years",
+                                  e.target.value,
+                                )
+                              }
+                              placeholder="2"
+                              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                            />
+                          </div>
+                          {formData.experienceDetails.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeExperienceField(index)}
+                              className="mt-6 flex items-center justify-center rounded-lg border border-slate-200 px-3 py-2 text-slate-600 hover:bg-red-50 hover:border-red-200 transition"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Bio */}
+                <div className="mt-4">
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                    Brief Introduction <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    rows={4}
+                    name="bio"
+                    value={formData.bio}
+                    onChange={handleInputChange}
+                    placeholder="Tell students about yourself, your teaching style, and your achievements..."
+                    required
+                    className="w-full resize-none rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  />
+                </div>
+
+                {/* File Upload */}
+                <div className="mt-4">
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                    Upload Qualification / ID Proof
+                  </label>
+                  <label
+                    htmlFor="file-upload"
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOver(true);
+                    }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setDragOver(false);
+
+                      if (e.dataTransfer.files.length > 0) {
+                        setFiles((prev) => [
+                          ...prev,
+                          ...Array.from(e.dataTransfer.files),
+                        ]);
+                      }
+                    }}
+                    className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-8 text-center transition ${
+                      dragOver
+                        ? "border-indigo-400 bg-indigo-50"
+                        : "border-slate-200 bg-slate-50 hover:border-indigo-300 hover:bg-indigo-50/40"
+                    }`}
+                  >
+                    <Upload className="h-7 w-7 text-slate-400" />
+                    {files.length > 0 ? (
+                      <div className="w-full space-y-2">
+                        {files.map((file, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between rounded-lg bg-white px-3 py-2 shadow-sm border"
+                          >
+                            <span
+                              className="truncate text-sm font-medium"
+                              style={{ color: PURPLE }}
+                            >
+                              {file.name}
+                            </span>
+
+                            <span className="text-xs text-slate-500">
+                              {(file.size / 1024 / 1024).toFixed(2)} MB
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removeFile(index)}
+                              className="text-red-500 hover:text-red-700 text-sm hover:cursor-pointer"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <>
+                        <span className="text-sm text-slate-500">
+                          Drag & drop files here, or{" "}
+                          <span
+                            style={{ color: PURPLE }}
+                            className="font-medium"
+                          >
+                            browse
+                          </span>
+                        </span>
+                        <span className="text-xs text-slate-400">
+                          PDF, JPG, PNG up to 5 MB
+                        </span>
+                      </>
+                    )}
+                    <input
+                      id="file-upload"
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      multiple
+                      className="sr-only"
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          setFiles((prev) => [
+                            ...prev,
+                            ...Array.from(e.target.files),
+                          ]);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+
+                {/* Consent */}
+                <div className="mt-5 flex items-start gap-3">
+                  <input
+                    id="consent"
+                    type="checkbox"
+                    checked={consent}
+                    onChange={(e) => setConsent(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 flex-shrink-0 cursor-pointer rounded accent-indigo-600"
+                  />
+                  <label
+                    htmlFor="consent"
+                    className="cursor-pointer text-sm leading-relaxed text-slate-500"
+                  >
+                    I agree to the{" "}
+                    <a
+                      href="#"
+                      style={{ color: PURPLE }}
+                      className="font-medium hover:underline"
+                    >
+                      Terms & Conditions
+                    </a>{" "}
+                    and confirm that the information provided is accurate. I
+                    consent to a background verification check.
+                  </label>
+                </div>
+
+                {/* Submit */}
+                <button
+                  type="submit"
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold text-white shadow-sm transition-colors"
+                  style={{ backgroundColor: PURPLE }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.backgroundColor = PURPLE_DARK)
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.backgroundColor = PURPLE)
+                  }
                 >
-                  Terms & Conditions
-                </a>{" "}
-                and confirm that the information provided is accurate. I consent
-                to a background verification check.
-              </label>
+                  Submit Application <ArrowRight className="h-4 w-4" />
+                </button>
+
+                {/* Success Message */}
+                {submitted && (
+                  <div
+                    id="success-msg"
+                    className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3.5 text-sm font-medium text-emerald-700"
+                  >
+                    <CheckCircle className="h-5 w-5 flex-shrink-0 text-emerald-500" />
+                    Application submitted! We'll reach out within 48 hours.
+                  </div>
+                )}
+              </form>
             </div>
-
-            {/* Submit */}
-            <button
-              type="submit"
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold text-white shadow-sm transition-colors"
-              style={{ backgroundColor: PURPLE }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = PURPLE_DARK)
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = PURPLE)
-              }
-            >
-              Submit Application <ArrowRight className="h-4 w-4" />
-            </button>
-
-            {/* Success Message */}
-            {submitted && (
-              <div
-                id="success-msg"
-                className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3.5 text-sm font-medium text-emerald-700"
-              >
-                <CheckCircle className="h-5 w-5 flex-shrink-0 text-emerald-500" />
-                Application submitted! We'll reach out within 48 hours.
-              </div>
-            )}
-          </form>
-        </div>
-      </section>
+          </section>
+        </>
+      )}
 
       {/* ── TESTIMONIALS ── */}
       <section style={{ backgroundColor: PURPLE_LIGHT }} className="px-6 py-16">
