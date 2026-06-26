@@ -1,7 +1,14 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
-import api from "../services/axios"
+import { useSelector, useDispatch } from "react-redux";
+import {
+  parentRequest,
+  parentSuccess,
+  parentFailure,
+  updateParent,
+  clearParent,
+} from "../features/Parent/Parent_slice";
+import api from "../services/axios";
 import {
   ArrowLeft,
   ArrowRight,
@@ -25,9 +32,19 @@ import {
 const PURPLE = "#6C5DD3";
 const PURPLE_DARK = "#5A4BC4";
 
-const childClassOptions = Array.from({ length: 12 }, (_, i) => `Class ${i + 1}`);
+const childClassOptions = Array.from(
+  { length: 12 },
+  (_, i) => `Class ${i + 1}`,
+);
 
-const locationOptions = ["Meerut", "Delhi", "Noida", "Ghaziabad", "Gurgaon", "Lucknow"];
+const locationOptions = [
+  "Meerut",
+  "Delhi",
+  "Noida",
+  "Ghaziabad",
+  "Gurgaon",
+  "Lucknow",
+];
 
 const subjectList = [
   "Mathematics",
@@ -39,9 +56,10 @@ const subjectList = [
 ];
 
 export default function RegisterParentPage() {
-  const user = useSelector((state)=>state.auth.user)
+  const user = useSelector((state) => state.auth.user);
   const navigate = useNavigate();
   const nextChildId = useRef(2);
+  const dispatch = useDispatch();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -49,7 +67,9 @@ export default function RegisterParentPage() {
     confirmPassword: "",
     location: "",
   });
-  const [children, setChildren] = useState([{ id: 1, name: "", class: "", subjects: [] }]);
+  const [children, setChildren] = useState([
+    { id: 1, name: "", class: "", subjects: [] },
+  ]);
   const [coordinates, setCoordinates] = useState(null); // [lng, lat]
   const [locationStatus, setLocationStatus] = useState("idle"); // idle | loading | success | error
   const [errors, setErrors] = useState({});
@@ -69,11 +89,15 @@ export default function RegisterParentPage() {
   };
 
   const removeChild = (id) => {
-    setChildren((prev) => (prev.length > 1 ? prev.filter((c) => c.id !== id) : prev));
+    setChildren((prev) =>
+      prev.length > 1 ? prev.filter((c) => c.id !== id) : prev,
+    );
   };
 
   const updateChild = (id, field, value) => {
-    setChildren((prev) => prev.map((c) => (c.id === id ? { ...c, [field]: value } : c)));
+    setChildren((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, [field]: value } : c)),
+    );
   };
 
   const toggleChildSubject = (id, subject) => {
@@ -111,33 +135,36 @@ export default function RegisterParentPage() {
     const next = {};
     if (!formData.name.trim()) next.name = "Full name is required";
     if (!formData.email.trim()) next.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) next.email = "Enter a valid email";
+    else if (!/\S+@\S+\.\S+/.test(formData.email))
+      next.email = "Enter a valid email";
 
     const childErrors = {};
     children.forEach((child) => {
       const ce = {};
       if (!child.name.trim()) ce.name = "Name is required";
       if (!child.class) ce.class = "Select a class";
-      if (child.subjects.length === 0) ce.subjects = "Select at least one subject";
+      if (child.subjects.length === 0)
+        ce.subjects = "Select at least one subject";
       if (Object.keys(ce).length) childErrors[child.id] = ce;
     });
     if (Object.keys(childErrors).length) next.children = childErrors;
 
     if (!formData.location) next.location = "Select your city";
-    if (!coordinates) next.coordinates = "Share your location so we can find nearby tutors";
+    if (!coordinates)
+      next.coordinates = "Share your location so we can find nearby tutors";
 
     setErrors(next);
     return Object.keys(next).length === 0;
   };
 
   const handleSubmit = async (e) => {
-    console.log("submit button")
+    console.log("submit button");
     e.preventDefault();
     setSubmitError("");
-console.log("submit button")
+    console.log("submit button");
     setSubmitting(true);
     try {
-      console.log("submit button")
+      console.log("submit button");
       const payload = {
         name: formData.name,
         email: formData.email,
@@ -145,17 +172,17 @@ console.log("submit button")
         location: formData.location,
         coordinates: { type: "Point", coordinates },
       };
-
-      const res = await api.post("user/registerparent",payload)
-
-      
-        navigate("/", {
-          state: {
-            accountCreated: true,
-          },
-          
-        });
+      dispatch(parentRequest());
+      const res = await api.post("user/registerparent", payload);
+      localStorage.setItem("parent", JSON.stringify(res.data));
+      dispatch(parentSuccess());
+      navigate("/", {
+        state: {
+          accountCreated: true,
+        },
+      });
     } catch (err) {
+      dispatch(parentRequest());
       setSubmitError(err.message || "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
@@ -191,13 +218,17 @@ console.log("submit button")
             onClick={() => navigate("/login")}
             className="hidden items-center gap-1.5 text-sm font-medium text-slate-700 sm:flex hover:cursor-pointer hover:text-violet-600"
           >
-            Already have an account? <span style={{ color: PURPLE }}>Log In</span>
+            Already have an account?{" "}
+            <span style={{ color: PURPLE }}>Log In</span>
           </a>
         </div>
       </header>
 
       {/* Form */}
-      <section className="flex flex-1 justify-center px-6 py-12" style={{ backgroundColor: "#F4F2FC" }}>
+      <section
+        className="flex flex-1 justify-center px-6 py-12"
+        style={{ backgroundColor: "#F4F2FC" }}
+      >
         <div className="w-full max-w-2xl">
           <button
             onClick={() => navigate("/rolechoose")}
@@ -228,7 +259,6 @@ console.log("submit button")
                 >
                   Account Details
                 </span>
-
               </div>
 
               {/* Children */}
@@ -270,7 +300,9 @@ console.log("submit button")
                               <User className="pointer-events-none absolute left-3.5 h-4 w-4 text-slate-400" />
                               <input
                                 value={child.name}
-                                onChange={(e) => updateChild(child.id, "name", e.target.value)}
+                                onChange={(e) =>
+                                  updateChild(child.id, "name", e.target.value)
+                                }
                                 placeholder="Child's name"
                                 className={`${inputBase} ${
                                   childErr.name
@@ -280,7 +312,9 @@ console.log("submit button")
                               />
                             </div>
                             {childErr.name && (
-                              <p className="mt-1 text-xs text-rose-500">{childErr.name}</p>
+                              <p className="mt-1 text-xs text-rose-500">
+                                {childErr.name}
+                              </p>
                             )}
                           </div>
 
@@ -289,7 +323,9 @@ console.log("submit button")
                               <BookOpen className="pointer-events-none absolute left-3.5 h-4 w-4 text-slate-400" />
                               <select
                                 value={child.class}
-                                onChange={(e) => updateChild(child.id, "class", e.target.value)}
+                                onChange={(e) =>
+                                  updateChild(child.id, "class", e.target.value)
+                                }
                                 className={`${inputBase} appearance-none pr-10 hover:cursor-pointer ${
                                   childErr.class
                                     ? "border-rose-300"
@@ -306,21 +342,28 @@ console.log("submit button")
                               <ChevronDown className="pointer-events-none absolute right-3.5 h-4 w-4 text-slate-400" />
                             </div>
                             {childErr.class && (
-                              <p className="mt-1 text-xs text-rose-500">{childErr.class}</p>
+                              <p className="mt-1 text-xs text-rose-500">
+                                {childErr.class}
+                              </p>
                             )}
                           </div>
                         </div>
 
                         <div className="mt-3">
-                          <p className="text-xs font-medium text-slate-500">Subjects needed</p>
+                          <p className="text-xs font-medium text-slate-500">
+                            Subjects needed
+                          </p>
                           <div className="mt-1.5 flex flex-wrap gap-2">
                             {subjectList.map((subject) => {
-                              const isSelected = child.subjects.includes(subject);
+                              const isSelected =
+                                child.subjects.includes(subject);
                               return (
                                 <button
                                   key={subject}
                                   type="button"
-                                  onClick={() => toggleChildSubject(child.id, subject)}
+                                  onClick={() =>
+                                    toggleChildSubject(child.id, subject)
+                                  }
                                   className="rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors hover:cursor-pointer"
                                   style={
                                     isSelected
@@ -329,7 +372,10 @@ console.log("submit button")
                                           backgroundColor: "#EEEAFC",
                                           color: PURPLE,
                                         }
-                                      : { borderColor: "#E2E8F0", color: "#475569" }
+                                      : {
+                                          borderColor: "#E2E8F0",
+                                          color: "#475569",
+                                        }
                                   }
                                 >
                                   {subject}
@@ -338,7 +384,9 @@ console.log("submit button")
                             })}
                           </div>
                           {childErr.subjects && (
-                            <p className="mt-1.5 text-xs text-rose-500">{childErr.subjects}</p>
+                            <p className="mt-1.5 text-xs text-rose-500">
+                              {childErr.subjects}
+                            </p>
                           )}
                         </div>
                       </div>
@@ -374,7 +422,9 @@ console.log("submit button")
                       value={formData.location}
                       onChange={handleChange}
                       className={`${inputBase} appearance-none pr-10 hover:cursor-pointer ${
-                        errors.location ? "border-rose-300" : "border-slate-200 focus:border-violet-400"
+                        errors.location
+                          ? "border-rose-300"
+                          : "border-slate-200 focus:border-violet-400"
                       }`}
                     >
                       <option value="">Select your city</option>
@@ -387,7 +437,9 @@ console.log("submit button")
                     <ChevronDown className="pointer-events-none absolute right-3.5 h-4 w-4 text-slate-400" />
                   </div>
                   {errors.location && (
-                    <p className="mt-1 text-xs text-rose-500">{errors.location}</p>
+                    <p className="mt-1 text-xs text-rose-500">
+                      {errors.location}
+                    </p>
                   )}
                 </div>
 
@@ -424,7 +476,9 @@ console.log("submit button")
                     )}
                   </div>
                   {errors.coordinates && (
-                    <p className="mt-1.5 text-xs text-rose-500">{errors.coordinates}</p>
+                    <p className="mt-1.5 text-xs text-rose-500">
+                      {errors.coordinates}
+                    </p>
                   )}
                 </div>
               </div>
@@ -443,10 +497,12 @@ console.log("submit button")
                 className="flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition-colors disabled:opacity-60"
                 style={{ backgroundColor: PURPLE }}
                 onMouseEnter={(e) => {
-                  if (!submitting) e.currentTarget.style.backgroundColor = PURPLE_DARK;
+                  if (!submitting)
+                    e.currentTarget.style.backgroundColor = PURPLE_DARK;
                 }}
                 onMouseLeave={(e) => {
-                  if (!submitting) e.currentTarget.style.backgroundColor = PURPLE;
+                  if (!submitting)
+                    e.currentTarget.style.backgroundColor = PURPLE;
                 }}
               >
                 {submitting ? (

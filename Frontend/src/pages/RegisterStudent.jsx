@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector,useDispatch } from "react-redux";
 import api from "../services/axios";
+import {
+  studentRequest,
+  studentSuccess,
+  studentFailure,
+  updateStudent,
+  clearStudent,
+} from "../features/Student/Student_Slice";
 import {
   ArrowLeft,
   ArrowRight,
@@ -70,6 +77,7 @@ export default function RegisterStudentPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [showSuccessPopup, setShowSuccessPopup] = useState();
+  const dispatch = useDispatch();
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -129,19 +137,23 @@ export default function RegisterStudentPage() {
         location: formData.location,
         coordinates: { type: "Point", coordinates },
       };
+      dispatch(studentRequest())
       const res = await api.post("user/registerstudent", payload);
+      localStorage.setItem("student", JSON.stringify(res.data))
+      dispatch(studentSuccess());
       navigate("/", {
         state: {
           accountCreated: true,
         },
       });
     } catch (error) {
-       const message =
+      dispatch(studentRequest())
+      const message =
         error?.response?.data?.message ||
         error?.response?.data?.error ||
         "Something went wrong. Please try again.";
       setSubmitError(message || "Something went wrong. Please try again.");
-      setShowSuccessPopup(true)
+      setShowSuccessPopup(true);
     } finally {
       setSubmitting(false);
     }
