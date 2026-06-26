@@ -162,12 +162,12 @@ const teacherRegistration = AsyncHandler(async (req, res) => {
 
   const rawDocuments = req.files?.documents || [];
 
-const uploadedDocuments = await Promise.all(
-  rawDocuments.map(async (doc) => {
-    const result = await uploadToCloudinary(doc.path);
-    return result.secure_url;
-  })
-);
+  const uploadedDocuments = await Promise.all(
+    rawDocuments.map(async (doc) => {
+      const result = await uploadToCloudinary(doc.path);
+      return result.secure_url;
+    }),
+  );
 
   if (!Array.isArray(subjects) || subjects.length === 0) {
     throw new ApiError(400, 'Subjects must be a non-empty array');
@@ -190,7 +190,6 @@ const uploadedDocuments = await Promise.all(
   if (user) {
     throw new ApiError(404, 'Teacher Already Exist');
   }
-  
 
   const teacher = await Teacher.create({
     userid: req.user._id,
@@ -205,8 +204,6 @@ const uploadedDocuments = await Promise.all(
     coordinates,
     documents: uploadedDocuments,
   });
-
-
 
   if (!teacher) {
     throw new ApiError(401, 'Internal Server Error While Registring Teacher ');
@@ -310,6 +307,28 @@ const getNearbyTeachers = async (req, res) => {
   }
 };
 
+const GetRoledUser = AsyncHandler(async (req,res) => {
+  const role = req.user.role;
+  let RoledUser;
+  if (role === 'teacher') {
+    RoledUser = await Teacher.findOne({ userid: req.user._id });
+  }
+  if (role === 'parent') {
+    RoledUser = await Parent.findOne({ userid: req.user._id });
+  }
+  if (role === 'student') {
+    RoledUser = await Student.findOne({ userid: req.user._id });
+  }
+
+  if (!RoledUser) {
+    throw new ApiError(404, 'Roled User not Found');
+  }
+
+  return res
+    .status(200)
+    .json(new Apireponse(200, 'Roled User Found', RoledUser));
+});
+
 export {
   createUser,
   loginUser,
@@ -317,4 +336,5 @@ export {
   studentRegistration,
   RegisterParent,
   getNearbyTeachers,
+  GetRoledUser,
 };

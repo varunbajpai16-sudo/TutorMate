@@ -94,7 +94,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("Already Logged In");
   const HandelLogout = () => {
-    
     if (user?.role === "teacher") {
       localStorage.clear("teacher");
     }
@@ -131,7 +130,7 @@ export default function LoginPage() {
         });
         if (!response.data.data.newuser) {
           const loginuser = response.data.data.existingUser;
-
+          const role = loginuser?.role;
           localStorage.setItem("user", JSON.stringify(loginuser));
 
           dispatch(
@@ -141,6 +140,17 @@ export default function LoginPage() {
             }),
           );
 
+          const res2 = await api.get("user/roleduser");
+          const roleduser = res2.data.data;
+          if (role === "teacher") {
+            localStorage.setItem("teacher", JSON.stringify(roleduser));
+          }
+          if (role === "parent") {
+            localStorage.setItem("parent", JSON.stringify(roleduser));
+          }
+          if (role === "student") {
+            localStorage.setItem("student", JSON.stringify(roleduser));
+          }
           alert("User Login Sucessfully");
           navigate("/");
         } else {
@@ -156,6 +166,21 @@ export default function LoginPage() {
           error?.response?.data?.message ||
           error?.response?.data?.error ||
           "Something went wrong. Please try again.";
+        console.log(error.response);
+        if (error.response.status === 404) {
+          const user = JSON.parse(localStorage.getItem("user"));
+
+          if (user.role === "teacher") {
+            navigate("/teacher");
+          }
+          if (user.role === "parent") {
+            navigate("/parent");
+          }
+          if (user.role === "student") {
+            navigate("/student");
+          }
+        }
+
         setErrorMessage(message);
         setShowPopup(true);
       } finally {

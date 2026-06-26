@@ -5,7 +5,8 @@ import {
   teacherRegistration,
   studentRegistration,
   RegisterParent,
-  getNearbyTeachers
+  getNearbyTeachers,
+  GetRoledUser
 } from '../controller/User.controller.js';
 import { upload } from '../middleware/Multer.middlewares.js';
 import { VerifyJwt } from '../middleware/Authentication.middlewares.js';
@@ -17,4 +18,5 @@ router.post('/registerteacher',upload.fields([ { name: "documents", maxCount: 5 
 router.post('/registerstudent', VerifyJwt, studentRegistration);
 router.post('/registerparent', VerifyJwt, RegisterParent);
 router.post("/getteacher",getNearbyTeachers)
+router.get("/roleduser",VerifyJwt,GetRoledUser)
 export default router;

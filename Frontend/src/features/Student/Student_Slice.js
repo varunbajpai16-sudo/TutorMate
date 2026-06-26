@@ -2,7 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const storedStudent = localStorage.getItem("student")
 const initialState = {
-  student: storedStudent && storedStudent!=="undefined" ? JSON.parse(storedUser) : null,
+  student: storedStudent && storedStudent!=="undefined" ? JSON.parse(storedStudent) : null,
   loading: false,
   error: null,
 };

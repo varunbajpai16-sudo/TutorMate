@@ -5,7 +5,7 @@ import UserRouter from "../src/router/User.route.js"
 const app = express();
 
 app.use(cors({
-    origin: process.env.ORIGEN,
+    origin:process.env.ORIGEN,
     credentials: true,
 }));
 app.use(cookieParser());
