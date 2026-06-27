@@ -185,8 +185,8 @@ function TeacherCard({ teacher }) {
             className="h-16 w-16 flex-shrink-0 rounded-full object-cover ring-2 ring-slate-100"
           />
         ) : (
-          <div className="h-16 w-16 flex-shrink-0 rounded-full bg-slate-200 flex items-center justify-center ring-2 ring-slate-100 text-xs font-semibold text-slate-700 text-center p-1">
-            {teacher.userid?.name}
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 text-sm font-bold text-white shadow-md">
+            {user.name?.charAt(0)?.toUpperCase() || "U"}
           </div>
         )}
         <div className="min-w-0 flex-1">
