@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import HomePageLoader from "../components/Loader";
 import {
@@ -110,9 +110,10 @@ function renderStars(rating = 0) {
 export default function TeacherProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation()
+  const teacher = location.state
   const user = useSelector((state) => state.auth.user);
 
-  const [teacher, setTeacher] = useState(SAMPLE_TEACHER);
   const [loading, setLoading] = useState(Boolean(id));
   const [notFound, setNotFound] = useState(false);
 
@@ -124,31 +125,6 @@ export default function TeacherProfile() {
 
     let active = true;
 
-    const fetchTeacher = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch(`${BASE_URL}/teacher/${id}`);
-        if (!res.ok) throw new Error("Failed to fetch teacher");
-        const data = await res.json();
-        const teacherData = data?.data || data?.teacher || data;
-
-        if (!active) return;
-
-        if (teacherData && Object.keys(teacherData).length > 0) {
-          setTeacher(teacherData);
-          setNotFound(false);
-        } else {
-          setNotFound(true);
-        }
-      } catch (error) {
-        console.log("Could not load teacher profile:", error);
-        // Keep showing sample data during development instead of a hard error.
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-
-    fetchTeacher();
     return () => {
       active = false;
     };

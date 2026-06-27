@@ -174,6 +174,7 @@ function FilterGroup({ title, options, selected, onToggle, counts, isFirst }) {
 }
 
 function TeacherCard({ teacher }) {
+  const navigate = useNavigate();
   return (
     <div className="flex flex-col rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
       <div className="flex items-start gap-4">
@@ -249,7 +250,8 @@ function TeacherCard({ teacher }) {
           <span className="text-sm text-slate-400">/hr</span>
         </div>
         <button
-          className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors"
+          className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors hover:cursor-pointer"
+          onClick={()=>navigate("/teacherprofile",{state:teacher})}
           style={{ backgroundColor: PURPLE }}
           onMouseEnter={(e) =>
             (e.currentTarget.style.backgroundColor = PURPLE_DARK)
