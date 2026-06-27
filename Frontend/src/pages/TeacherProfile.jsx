@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import HomePageLoader from "../components/Loader";
@@ -31,42 +31,6 @@ const navLinks = [
   { label: "How it Works", link: "/howitwork" },
   { label: "Become a Teacher", link: "/teacher" },
 ];
-
-// Adjust this to whatever route your backend actually exposes,
-// e.g. `${BASE_URL}/teacher/${id}` should return the Teacher doc
-// with `userid` populated (name, email, phone, profileImage).
-const BASE_URL = "https://tutormate-pzpe.onrender.com/api/v1";
-
-// Placeholder data so the page renders something meaningful while
-// the API call is wired up, or if it fails during local development.
-// Safe to delete once GET `${BASE_URL}/teacher/:id` is live.
-const SAMPLE_TEACHER = {
-  _id: "demo",
-  userid: {
-    name: "Priya Sharma",
-    email: "priya.sharma@example.com",
-    phone: "+91 98765 43210",
-    profileImage: "https://i.pravatar.cc/300?img=47",
-  },
-  subjects: ["Mathematics", "Physics"],
-  classes: ["Class 9", "Class 10", "Class 11", "Class 12"],
-  hourelyfee: 600,
-  location: "Meerut, Uttar Pradesh",
-  bio:
-    "I'm a mathematics and physics tutor with over 5 years of experience helping school students build strong fundamentals and exam confidence. I focus on concept clarity first, then plenty of practice with past papers, and I adapt my pace to how each student learns best.",
-  rating: 4.9,
-  totalReviews: 120,
-  mode: ["online", "offline"],
-  isVerifiedTeacher: true,
-  education: [
-    { degree: "M.Sc. Mathematics", institute: "Delhi University", year: 2018 },
-    { degree: "B.Sc. Mathematics (Hons)", institute: "Delhi University", year: 2016 },
-  ],
-  experienceDetails: [
-    { institution: "Bright Future Academy", years: 3 },
-    { institution: "Private Home Tuitions", years: 2 },
-  ],
-};
 
 const SAMPLE_REVIEWS = [
   {
@@ -107,40 +71,99 @@ function renderStars(rating = 0) {
   return stars;
 }
 
+// Accepts either shape that can land here:
+//  A) the raw backend record  -> has `userid`, `hourelyfee`, `totalReviews`, `isVerifiedTeacher`...
+//  B) the flattened "card" shape built by FindTeachersPage's normalizeTeacher()
+//     -> has `name`, `price`, `reviews`, `img`, `verified`, `experienceYears`...
+function normalizeProfileData(data) {
+  if (!data) return null;
+
+  const isRawShape = Boolean(data.userid) || data._id !== undefined;
+
+  if (isRawShape) {
+    return {
+      tutor: data.userid || {},
+      subjects: data.subjects || [],
+      classes: data.classes || [],
+      hourelyfee: data.hourelyfee,
+      teacherLocation: data.location,
+      bio: data.bio,
+      rating: data.rating || 0,
+      totalReviews: data.totalReviews || 0,
+      mode: data.mode || [],
+      isVerifiedTeacher: Boolean(data.isVerifiedTeacher),
+      education: data.education || [],
+      experienceDetails: data.experienceDetails || [],
+    };
+  }
+
+  // Card shape from FindTeachersPage
+  return {
+    tutor: {
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      profileImage: data.img,
+    },
+    subjects: data.subjects || [],
+    classes: data.classes || [],
+    hourelyfee: data.price,
+    teacherLocation: data.location,
+    bio: data.bio,
+    rating: data.rating || 0,
+    totalReviews: data.reviews || 0,
+    // card shape capitalizes mode ("Online"/"Offline"); normalize back to lowercase
+    mode: (data.mode || []).map((m) => String(m).toLowerCase()),
+    isVerifiedTeacher: Boolean(data.verified),
+    education: data.education || [],
+    experienceDetails:
+      data.experienceDetails ||
+      (data.experienceYears
+        ? [{ institution: "Experience", years: data.experienceYears }]
+        : []),
+  };
+}
+
 export default function TeacherProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const location = useLocation()
-  const teacher = location.state
+  const location = useLocation();
   const user = useSelector((state) => state.auth.user);
+  const rawTeachers = useSelector((state) => state.teachers.teachers);
 
-  const [loading, setLoading] = useState(Boolean(id));
-  const [notFound, setNotFound] = useState(false);
+  // Prefer whatever was passed via navigation state (from FindTeachersPage).
+  // Fall back to a redux lookup by :id for direct links / refreshes.
+  const incomingData = useMemo(() => {
+    if (location.state) return location.state;
+    if (id && rawTeachers?.length) {
+      return rawTeachers.find((t) => t._id === id) || null;
+    }
+    return null;
+  }, [location.state, id, rawTeachers]);
+
+  const profile = useMemo(
+    () => normalizeProfileData(incomingData),
+    [incomingData],
+  );
+
+  const [loading, setLoading] = useState(Boolean(id) && !location.state);
 
   useEffect(() => {
-    if (!id) {
-      setLoading(false);
-      return;
-    }
-
-    let active = true;
-
-    return () => {
-      active = false;
-    };
-  }, [id]);
+    // Nothing async to wait on right now (data comes from nav state or the
+    // already-loaded redux store). This effect is a hook point for wiring
+    // up a real GET ${BASE_URL}/teacher/:id call later if needed.
+    setLoading(false);
+  }, [profile]);
 
   if (loading) return <HomePageLoader />;
 
-  if (notFound) {
+  if (!profile) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-white px-6 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-rose-100">
           <Users className="h-8 w-8 text-rose-500" />
         </div>
-        <h1 className="text-2xl font-bold text-slate-900">
-          Teacher not found
-        </h1>
+        <h1 className="text-2xl font-bold text-slate-900">Teacher not found</h1>
         <p className="max-w-sm text-slate-500">
           This teacher profile doesn't exist or may have been removed.
         </p>
@@ -156,19 +179,19 @@ export default function TeacherProfile() {
   }
 
   const {
-    userid: tutor = {},
-    subjects = [],
-    classes = [],
+    tutor,
+    subjects,
+    classes,
     hourelyfee,
-    location: teacherLocation,
+    teacherLocation,
     bio,
-    rating = 0,
-    totalReviews = 0,
-    mode = [],
+    rating,
+    totalReviews,
+    mode,
     isVerifiedTeacher,
-    education = [],
-    experienceDetails = [],
-  } = teacher || {};
+    education,
+    experienceDetails,
+  } = profile;
 
   const totalExperience = experienceDetails.reduce(
     (sum, e) => sum + (Number(e.years) || 0),
@@ -180,10 +203,7 @@ export default function TeacherProfile() {
       {/* Header */}
       <header className="border-b border-slate-100 bg-white">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10">
-          <div
-            className="flex items-center gap-3 cursor-pointer"
-            onClick={() => navigate("/")}
-          >
+          <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 shadow-lg">
               <BookOpen className="h-6 w-6 text-amber-300" />
             </div>
@@ -198,15 +218,22 @@ export default function TeacherProfile() {
           </div>
 
           <nav className="hidden items-center gap-9 text-sm font-medium lg:flex">
-            {navLinks.map((link) => (
-              <button
-                key={link.label}
-                onClick={() => navigate(link.link)}
-                className="pb-5 -mb-5 text-slate-600 transition-colors hover:cursor-pointer hover:text-black"
-              >
-                {link.label}
-              </button>
-            ))}
+            {navLinks.map((link) => {
+              const isActive = location.pathname === link.link;
+              return (
+                <button
+                  key={link.label}
+                  onClick={() => navigate(link.link)}
+                  className={`pb-5 -mb-5 transition-colors hover:cursor-pointer  ${
+                    isActive
+                      ? "border-b-2 font-semibold text-violet-600"
+                      : "text-slate-600 hover:text-black"
+                  }`}
+                >
+                  {link.label}
+                </button>
+              );
+            })}
           </nav>
 
           {user ? (
@@ -219,22 +246,25 @@ export default function TeacherProfile() {
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-5">
-              <a
-                onClick={() => navigate("/login")}
-                className="hidden cursor-pointer items-center gap-1.5 text-sm font-medium text-slate-700 sm:flex hover:text-violet-600"
-              >
-                <ShieldCheck className="h-4 w-4" />
-                Login
-              </a>
-              <button
-                onClick={() => navigate("/signup")}
-                className="rounded-lg px-5 py-2.5 text-sm font-semibold text-white"
-                style={{ backgroundColor: PURPLE }}
-              >
-                Sign Up
-              </button>
-            </div>
+            <>
+              <div className="flex items-center gap-5 cursor-pointer">
+                <a
+                  onClick={() => navigate("/login")}
+                  className="hidden items-center gap-1.5 text-sm font-medium text-slate-700 sm:flex hover:text-violet-600"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Login
+                </a>
+
+                <button
+                  onClick={() => navigate("/signup")}
+                  className="rounded-lg px-5 py-2.5 text-sm font-semibold text-white"
+                  style={{ backgroundColor: PURPLE }}
+                >
+                  Sign Up
+                </button>
+              </div>
+            </>
           )}
         </div>
       </header>
@@ -348,42 +378,46 @@ export default function TeacherProfile() {
               </div>
             </div>
 
-            <div className="mt-5">
-              <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                Classes
+            {classes.length > 0 && (
+              <div className="mt-5">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Classes
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {classes.map((c) => (
+                    <span
+                      key={c}
+                      className="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600"
+                    >
+                      {c}
+                    </span>
+                  ))}
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {classes.map((c) => (
-                  <span
-                    key={c}
-                    className="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600"
-                  >
-                    {c}
-                  </span>
-                ))}
-              </div>
-            </div>
+            )}
 
-            <div className="mt-5">
-              <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                Teaching Mode
+            {mode.length > 0 && (
+              <div className="mt-5">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Teaching Mode
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {mode.map((m) => (
+                    <span
+                      key={m}
+                      className="flex items-center gap-1.5 rounded-full bg-sky-50 px-3 py-1.5 text-sm font-medium text-sky-600"
+                    >
+                      {m === "online" ? (
+                        <Wifi className="h-3.5 w-3.5" />
+                      ) : (
+                        <HomeIcon className="h-3.5 w-3.5" />
+                      )}
+                      {m === "online" ? "Online" : "Home Tuition"}
+                    </span>
+                  ))}
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {mode.map((m) => (
-                  <span
-                    key={m}
-                    className="flex items-center gap-1.5 rounded-full bg-sky-50 px-3 py-1.5 text-sm font-medium text-sky-600"
-                  >
-                    {m === "online" ? (
-                      <Wifi className="h-3.5 w-3.5" />
-                    ) : (
-                      <HomeIcon className="h-3.5 w-3.5" />
-                    )}
-                    {m === "online" ? "Online" : "Home Tuition"}
-                  </span>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Education */}
@@ -525,7 +559,8 @@ export default function TeacherProfile() {
             <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
               <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                 <Users className="h-4 w-4 text-violet-600" />
-                Why students choose {tutor.name?.split(" ")[0] || "this teacher"}
+                Why students choose{" "}
+                {tutor.name?.split(" ")[0] || "this teacher"}
               </div>
               <ul className="mt-4 space-y-3 text-sm text-slate-500">
                 <li className="flex gap-2">

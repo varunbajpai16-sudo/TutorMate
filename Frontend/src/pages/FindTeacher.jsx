@@ -180,28 +180,26 @@ function TeacherCard({ teacher }) {
       <div className="flex items-start gap-4">
         {teacher.userid?.avatar ? (
           <img
-            src={teacher.userid.avatar}
-            alt={teacher.userid.name}
+            src={teacher.img}
+            alt={teacher.name}
             className="h-16 w-16 flex-shrink-0 rounded-full object-cover ring-2 ring-slate-100"
           />
         ) : (
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 text-sm font-bold text-white shadow-md">
-            {teacher.userid.name?.charAt(0)?.toUpperCase() || "U"}
+            {teacher.name?.charAt(0)?.toUpperCase() || "U"}
           </div>
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <h3 className="truncate font-semibold text-slate-900">
-              {teacher.userid.name}
+              {teacher.name}
             </h3>
             {teacher.verified && (
               <ShieldCheck className="h-4 w-4 flex-shrink-0 text-emerald-500" />
             )}
           </div>
           <div className="mt-0.5 text-sm text-slate-500">
-            {Math.max(
-              ...(teacher.experienceDetails?.map((e) => e.years) ?? [0]),
-            )}
+            {teacher.experienceYears}
             + Years Exp.
           </div>
           <div className="mt-1 flex items-center gap-1 text-sm">
@@ -253,7 +251,7 @@ function TeacherCard({ teacher }) {
       <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
         <div>
           <span className="text-lg font-bold text-slate-900">
-            ₹{teacher.hourelyfee}
+            ₹{teacher.price}
           </span>
           <span className="text-sm text-slate-400">/hr</span>
         </div>
@@ -289,8 +287,12 @@ export default function FindTeachersPage() {
   const user = useSelector((state) => state.auth.user);
 
   // Load real teacher data from localStorage on mount
-  const teachers = useSelector((state) => state.teachers.teachers);
-  console.log(teachers);
+  const rawTeachers = useSelector((state) => state.teachers.teachers);
+
+  const teachers = useMemo(
+    () => rawTeachers.map(normalizeTeacher),
+    [rawTeachers],
+  );
 
   // Build the subject list from whatever subjects actually exist in the
   // stored data, falling back to a sensible default if storage is empty.
