@@ -2,14 +2,16 @@ import React from "react";
 import { useState, useEffect } from "react";
 import { MessageCircle } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useSelector,useDispatch } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import HomePageLoader from "../components/Loader";
 import api from "../services/axios";
-import { setTeachers,
+import {
+  setTeachers,
   addTeacher,
   clearTeachers,
   setTeacherLoading,
-  setTeacherError,} from "../features/LocalTeacher/LocalTeachers"
+  setTeacherError,
+} from "../features/LocalTeacher/LocalTeachers";
 import {
   GraduationCap,
   BookOpen,
@@ -126,35 +128,18 @@ const subjects = [
   },
 ];
 
-const teachers = [
-  {
-    name: "Priya Sharma",
-    subject: "Mathematics",
-    exp: "5+ Years Exp.",
-    rating: "4.9",
-    reviews: "120",
-    ring: "ring-slate-200",
-    img: "https://i.pravatar.cc/150?img=47",
-  },
-  {
-    name: "Rahul Verma",
-    subject: "Physics",
-    exp: "7+ Years Exp.",
-    rating: "4.8",
-    reviews: "98",
-    ring: "ring-sky-200",
-    img: "https://i.pravatar.cc/150?img=53",
-  },
-  {
-    name: "Anjali Mehta",
-    subject: "English",
-    exp: "4+ Years Exp.",
-    rating: "4.7",
-    reviews: "76",
-    ring: "ring-rose-200",
-    img: "https://i.pravatar.cc/150?img=44",
-  },
-];
+const subjectStyles = {
+  Mathematics: { bg: "bg-indigo-50", text: "text-indigo-600" },
+  Physics: { bg: "bg-rose-50", text: "text-rose-600" },
+  English: { bg: "bg-amber-50", text: "text-amber-600" },
+  Chemistry: { bg: "bg-sky-50", text: "text-sky-600" },
+  Biology: { bg: "bg-emerald-50", text: "text-emerald-600" },
+  "Computer Science": { bg: "bg-orange-50", text: "text-orange-600" },
+  Hindi: { bg: "bg-fuchsia-50", text: "text-fuchsia-600" },
+  Science: { bg: "bg-teal-50", text: "text-teal-600" },
+  Economics: { bg: "bg-lime-50", text: "text-lime-600" },
+  Commerce: { bg: "bg-cyan-50", text: "text-cyan-600" },
+};
 
 function HeroIllustration() {
   return (
@@ -481,6 +466,7 @@ export default function TutorMateHomepage() {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const teachers = useSelector((state) => state.teachers);
   const [showSuccessPopup, setShowSuccessPopup] = useState(
     location.state?.accountCreated || false,
   );
@@ -510,7 +496,7 @@ export default function TutorMateHomepage() {
           "localTeachers",
           JSON.stringify(response.data.data),
         );
-        dispatch(setTeachers(response.data.data))
+        dispatch(setTeachers(response.data.data));
       } catch (error) {
         console.log(error.response?.data?.message || error.message);
       }
@@ -540,6 +526,11 @@ export default function TutorMateHomepage() {
 
     return () => clearTimeout(timer);
   }, [loading]);
+
+  const topTeachers = [...teachers.teachers]
+    .sort((a, b) => b.rating - a.rating)
+    .slice(0, 3);
+  console.log(topTeachers);
 
   if (loading) {
     return <HomePageLoader />;
@@ -852,34 +843,53 @@ export default function TutorMateHomepage() {
               </a>
             </div>
             <div className="space-y-4">
-              {teachers.map((t) => (
+              {topTeachers.map((teacher) => (
                 <div
-                  key={t.name}
+                  key={teacher?._id || teacher?.userid?.name}
                   className="flex items-center gap-4 rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
                 >
-                  <img
-                    src={t.img}
-                    alt={t.name}
-                    className={`h-14 w-14 flex-shrink-0 rounded-full object-cover ring-2 ${t.ring}`}
-                  />
+                  <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 text-base font-bold text-white shadow-md">
+                    {teacher?.userid?.name?.charAt(0)?.toUpperCase() || "U"}
+                  </div>
+
                   <div className="min-w-0 flex-1">
-                    <div className="font-semibold text-slate-900">{t.name}</div>
-                    <div className="truncate text-sm text-slate-500">
-                      {t.subject} <span className="text-slate-300">•</span>{" "}
-                      {t.exp}
+                    <div className="font-semibold text-slate-900">
+                      {teacher?.userid?.name || "Unnamed Teacher"}
                     </div>
+
+                    <div className="mt-1 flex flex-wrap gap-1.5">
+                      {teacher?.subjects?.map((subj) => {
+                        const style = subjectStyles[subj] || {
+                          bg: "bg-slate-100",
+                          text: "text-slate-600",
+                        };
+                        return (
+                          <span
+                            key={subj}
+                            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${style.bg} ${style.text}`}
+                          >
+                            {subj}
+                          </span>
+                        );
+                      })}
+                    </div>
+
                     <div className="mt-1 flex items-center gap-1 text-sm">
                       <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
                       <span className="font-semibold text-slate-700">
-                        {t.rating}
+                        {teacher?.rating ?? 0}
                       </span>
                       <span className="text-slate-400">
-                        ({t.reviews} Reviews)
+                        ({teacher?.totalReviews ?? 0} Reviews)
                       </span>
                     </div>
                   </div>
+
                   <button
-                    className="flex-shrink-0 whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:bg-indigo-50"
+                    onClick={() =>
+                      navigate("/teacherprofile", { state: teacher })
+                    }
+                    className="flex-shrink-0 whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:bg-indigo-50 hover:cursor-pointer"
                     style={{ borderColor: "#D9D2F5", color: PURPLE }}
                   >
                     View Profile
