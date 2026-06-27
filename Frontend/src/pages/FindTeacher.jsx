@@ -186,7 +186,7 @@ function TeacherCard({ teacher }) {
           />
         ) : (
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 text-sm font-bold text-white shadow-md">
-            {user.name?.charAt(0)?.toUpperCase() || "U"}
+            {teacher.userid.name?.charAt(0)?.toUpperCase() || "U"}
           </div>
         )}
         <div className="min-w-0 flex-1">
