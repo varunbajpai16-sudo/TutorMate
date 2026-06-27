@@ -284,26 +284,37 @@ const getNearbyTeachers = async (req, res) => {
     const { latitude, longitude } = req.body || {};
     console.log(latitude,longitude)
     if (latitude == null || longitude == null) {
-      const teachers = await Teacher.find().populate("userid");;
+      const teachers = await Teacher.find().populate("userid");
       return res
         .status(200)
         .json(new Apireponse(200, 'All Teachers', teachers));
     }
 
     const teachers = await Teacher.aggregate([
-      {
-        $geoNear: {
-          near: {
-            type: 'Point',
-            coordinates: [Number(longitude), Number(latitude)],
-          },
-          distanceField: 'distance',
-          maxDistance: 10000, // 10 km
-          spherical: true,
-          key: 'coordinates',
-        },
+  {
+    $geoNear: {
+      near: {
+        type: "Point",
+        coordinates: [Number(longitude), Number(latitude)],
       },
-    ]);
+      distanceField: "distance",
+      maxDistance: 10000, // 10 km
+      spherical: true,
+      key: "coordinates",
+    },
+  },
+  {
+    $lookup: {
+      from: "users", // MongoDB collection name
+      localField: "userid",
+      foreignField: "_id",
+      as: "userid",
+    },
+  },
+  {
+    $unwind: "$userid",
+  },
+]);
 
     return res
       .status(200)
