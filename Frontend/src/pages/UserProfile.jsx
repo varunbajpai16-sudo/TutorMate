@@ -21,6 +21,8 @@ import {
   ChevronDown,
   Brain,
   ArrowRight,
+  Menu,
+  X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -39,24 +41,26 @@ const navLinks = [
 
 // ─── Shared Header ─────────────────────────────────────────────────────────────
 function Header({ user, navigate, location }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
-    <header className="border-b border-slate-100 bg-white">
-      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 shadow-lg">
-            <BookOpen className="h-6 w-6 text-amber-300" />
+    <header className="sticky top-0 z-40 border-b border-slate-100 bg-white">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:h-20 sm:px-6 lg:px-10">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 shadow-lg sm:h-11 sm:w-11">
+            <BookOpen className="h-5 w-5 text-amber-300 sm:h-6 sm:w-6" />
           </div>
           <div>
-            <div className="text-xl font-extrabold leading-tight text-slate-900">
+            <div className="text-base font-extrabold leading-tight text-slate-900 sm:text-xl">
               TutorMate
             </div>
-            <div className="text-xs leading-tight text-slate-400">
+            <div className="hidden text-xs leading-tight text-slate-400 sm:block">
               Find the right teacher for you
             </div>
           </div>
         </div>
 
-        <nav className="hidden items-center gap-9 text-sm font-medium lg:flex">
+        <nav className="hidden items-center gap-6 text-sm font-medium lg:flex xl:gap-9">
           {navLinks.map((link) => {
             const isActive = location?.pathname === link.link;
             return (
@@ -75,18 +79,19 @@ function Header({ user, navigate, location }) {
           })}
         </nav>
 
-        <div
-          onClick={() => navigate("/profile")}
-          className="flex items-center gap-3 cursor-pointer"
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 text-sm font-bold text-white shadow-md">
-            {user?.name?.charAt(0)?.toUpperCase() || "U"}
+        <div className="flex items-center gap-3 sm:gap-5">
+          <div
+            onClick={() => navigate("/profile")}
+            className="flex items-center gap-3 cursor-pointer"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 text-sm font-bold text-white shadow-md sm:h-10 sm:w-10">
+              {user?.name?.charAt(0)?.toUpperCase() || "U"}
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-5 cursor-pointer">
+
           <a
             onClick={() => navigate("/login")}
-            className="hidden items-center gap-1.5 text-sm font-medium text-slate-700 sm:flex hover:text-violet-600"
+            className="hidden items-center gap-1.5 text-sm font-medium text-slate-700 sm:flex hover:text-violet-600 hover:cursor-pointer"
           >
             <ShieldCheck className="h-4 w-4" />
             Login
@@ -94,13 +99,51 @@ function Header({ user, navigate, location }) {
 
           <button
             onClick={() => navigate("/signup")}
-            className="rounded-lg px-5 py-2.5 text-sm font-semibold text-white"
+            className="rounded-lg px-3.5 py-2 text-xs font-semibold text-white sm:px-5 sm:py-2.5 sm:text-sm"
             style={{ backgroundColor: PURPLE }}
           >
             Sign Up
           </button>
+
+          {/* Mobile menu toggle */}
+          <button
+            onClick={() => setMobileMenuOpen((v) => !v)}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-700 lg:hidden"
+            aria-label="Toggle navigation menu"
+          >
+            {mobileMenuOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
+          </button>
         </div>
       </div>
+
+      {/* Mobile nav panel */}
+      {mobileMenuOpen && (
+        <nav className="flex flex-col gap-1 border-t border-slate-100 bg-white px-4 py-3 lg:hidden">
+          {navLinks.map((link) => {
+            const isActive = location?.pathname === link.link;
+            return (
+              <button
+                key={link.label}
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  navigate(link.link);
+                }}
+                className={`rounded-lg px-3 py-2.5 text-left text-sm font-medium ${
+                  isActive
+                    ? "bg-violet-50 font-semibold text-violet-600"
+                    : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                {link.label}
+              </button>
+            );
+          })}
+        </nav>
+      )}
     </header>
   );
 }
@@ -131,7 +174,7 @@ function Badge({ label, color = "indigo" }) {
 function Card({ children, className = "" }) {
   return (
     <div
-      className={`rounded-2xl border border-slate-100 bg-white shadow-sm p-6 ${className}`}
+      className={`rounded-2xl border border-slate-100 bg-white shadow-sm p-4 sm:p-6 ${className}`}
     >
       {children}
     </div>
@@ -162,10 +205,10 @@ function TeacherProfile({ user, teacher }) {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {/* Top Hero Card */}
       <Card>
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-6">
           <AvatarBlock
             name={user?.name}
             avatar={user?.avatar}
@@ -181,7 +224,7 @@ function TeacherProfile({ user, teacher }) {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-2xl font-extrabold text-slate-900">
+                  <h2 className="text-xl font-extrabold text-slate-900 sm:text-2xl">
                     {user?.name || "Teacher Name"}
                   </h2>
                   {teacher?.isVerifiedTeacher && (
@@ -244,9 +287,9 @@ function TeacherProfile({ user, teacher }) {
         </div>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-5 sm:gap-6 lg:grid-cols-3">
         {/* Left column */}
-        <div className="space-y-6 lg:col-span-2">
+        <div className="space-y-5 sm:space-y-6 lg:col-span-2">
           {/* Bio */}
           <Card>
             <SectionTitle>About Me</SectionTitle>
@@ -277,7 +320,7 @@ function TeacherProfile({ user, teacher }) {
                   <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100">
                     <GraduationCap className="h-4 w-4 text-indigo-600" />
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <div className="font-semibold text-slate-900 text-sm">
                       {edu.degree}
                     </div>
@@ -286,7 +329,7 @@ function TeacherProfile({ user, teacher }) {
                     </div>
                   </div>
                   {isEditing && (
-                    <button className="ml-auto text-slate-400 hover:text-rose-500">
+                    <button className="ml-auto flex-shrink-0 text-slate-400 hover:text-rose-500">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   )}
@@ -315,7 +358,7 @@ function TeacherProfile({ user, teacher }) {
                   <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100">
                     <Award className="h-4 w-4 text-emerald-600" />
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <div className="font-semibold text-slate-900 text-sm">
                       {exp.institution}
                     </div>
@@ -325,7 +368,7 @@ function TeacherProfile({ user, teacher }) {
                     </div>
                   </div>
                   {isEditing && (
-                    <button className="ml-auto text-slate-400 hover:text-rose-500">
+                    <button className="ml-auto flex-shrink-0 text-slate-400 hover:text-rose-500">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   )}
@@ -344,7 +387,7 @@ function TeacherProfile({ user, teacher }) {
         </div>
 
         {/* Right column */}
-        <div className="space-y-6">
+        <div className="space-y-5 sm:space-y-6">
           {/* Subjects */}
           <Card>
             <SectionTitle>Subjects</SectionTitle>
@@ -390,7 +433,7 @@ function TeacherProfile({ user, teacher }) {
               </div>
             ) : (
               <div
-                className="text-3xl font-extrabold"
+                className="text-2xl font-extrabold sm:text-3xl"
                 style={{ color: PURPLE }}
               >
                 ₹{teacher?.hourelyfee || 0}
@@ -418,7 +461,7 @@ function TeacherProfile({ user, teacher }) {
               ].map(({ label, value, icon: Icon }) => (
                 <div key={label} className="text-center">
                   <Icon className="h-5 w-5 text-amber-300 mx-auto mb-1" />
-                  <div className="text-2xl font-extrabold text-white">
+                  <div className="text-xl font-extrabold text-white sm:text-2xl">
                     {value}
                   </div>
                   <div className="text-xs text-indigo-200">{label}</div>
@@ -451,10 +494,10 @@ function StudentProfile({ user, student, navigate }) {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {/* Hero Card */}
       <Card>
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-6">
           <AvatarBlock
             name={user?.name}
             avatar={user?.avatar}
@@ -469,7 +512,7 @@ function StudentProfile({ user, student, navigate }) {
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="text-2xl font-extrabold text-slate-900">
+                <h2 className="text-xl font-extrabold text-slate-900 sm:text-2xl">
                   {user?.name || "Student Name"}
                 </h2>
                 <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-slate-500">
@@ -503,8 +546,8 @@ function StudentProfile({ user, student, navigate }) {
         </div>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
+      <div className="grid gap-5 sm:gap-6 lg:grid-cols-3">
+        <div className="space-y-5 sm:space-y-6 lg:col-span-2">
           {/* Basic Info */}
           <Card>
             <SectionTitle>Academic Details</SectionTitle>
@@ -586,7 +629,7 @@ function StudentProfile({ user, student, navigate }) {
         </div>
 
         {/* Right column */}
-        <div className="space-y-6">
+        <div className="space-y-5 sm:space-y-6">
           {/* Quick action */}
           <Card className="border-0" style={{ backgroundColor: PURPLE_LIGHT }}>
             <div className="text-center">
@@ -640,9 +683,9 @@ function StudentProfile({ user, student, navigate }) {
                   >
                     <Icon className="h-4 w-4" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <div className="text-xs text-slate-400">{label}</div>
-                    <div className="text-sm font-semibold text-slate-900">
+                    <div className="truncate text-sm font-semibold text-slate-900">
                       {value}
                     </div>
                   </div>
@@ -693,15 +736,15 @@ function ParentProfile({ user, parent, navigate }) {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {/* Hero Card */}
       <Card>
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-6">
           <AvatarBlock name={user?.name} isEditing={isEditing} />
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="text-2xl font-extrabold text-slate-900">
+                <h2 className="text-xl font-extrabold text-slate-900 sm:text-2xl">
                   {user?.name || "Parent Name"}
                 </h2>
                 <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-slate-500">
@@ -735,11 +778,11 @@ function ParentProfile({ user, parent, navigate }) {
         </div>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
+      <div className="grid gap-5 sm:gap-6 lg:grid-cols-3">
+        <div className="space-y-5 sm:space-y-6 lg:col-span-2">
           {/* Children */}
           <Card>
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <SectionTitle>My Children</SectionTitle>
               {isEditing && (
                 <button
@@ -754,15 +797,15 @@ function ParentProfile({ user, parent, navigate }) {
               {children.map((child, i) => {
                 const colorSet = childCardColors[i % childCardColors.length];
                 return (
-                  <div key={i} className={`rounded-2xl p-5 ${colorSet.bg}`}>
-                    <div className="flex items-start justify-between">
+                  <div key={i} className={`rounded-2xl p-4 sm:p-5 ${colorSet.bg}`}>
+                    <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-3">
                         <div
-                          className={`flex h-11 w-11 items-center justify-center rounded-full text-lg font-extrabold ${colorSet.icon.split(" ")[0]} ${colorSet.icon.split(" ")[1]}`}
+                          className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-lg font-extrabold ${colorSet.icon.split(" ")[0]} ${colorSet.icon.split(" ")[1]}`}
                         >
                           {child.name?.charAt(0)?.toUpperCase()}
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <div className="font-bold text-slate-900">
                             {child.name}
                           </div>
@@ -773,7 +816,7 @@ function ParentProfile({ user, parent, navigate }) {
                         </div>
                       </div>
                       {isEditing && (
-                        <button className="text-slate-400 hover:text-rose-500 transition-colors">
+                        <button className="flex-shrink-0 text-slate-400 hover:text-rose-500 transition-colors">
                           <Trash2 className="h-4 w-4" />
                         </button>
                       )}
@@ -805,10 +848,10 @@ function ParentProfile({ user, parent, navigate }) {
               />
             ) : (
               <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-amber-100">
                   <MapPin className="h-5 w-5 text-amber-500" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="text-sm font-semibold text-slate-900">
                     {parent?.location || "—"}
                   </div>
@@ -822,7 +865,7 @@ function ParentProfile({ user, parent, navigate }) {
         </div>
 
         {/* Right column */}
-        <div className="space-y-6">
+        <div className="space-y-5 sm:space-y-6">
           {/* Stats */}
           <Card className="border-0" style={{ backgroundColor: PURPLE_LIGHT }}>
             <SectionTitle>At a Glance</SectionTitle>
@@ -859,9 +902,9 @@ function ParentProfile({ user, parent, navigate }) {
                   >
                     <Icon className="h-4 w-4" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <div className="text-xs text-slate-400">{label}</div>
-                    <div className="text-sm font-bold text-slate-900">
+                    <div className="truncate text-sm font-bold text-slate-900">
                       {value}
                     </div>
                   </div>
@@ -926,7 +969,7 @@ export default function ProfilePage() {
   return (
     <div
       style={{ backgroundColor: "#F4F2FC" }}
-      className="min-h-screen bg-white font-sans antialiased"
+      className="min-h-screen bg-white font-sans antialiased overflow-x-hidden"
     >
       <Header
         user={user}
@@ -937,7 +980,7 @@ export default function ProfilePage() {
       {/* Page hero banner */}
 
       {/* Profile content */}
-      <main className="mx-auto max-w-7xl px-6 py-10 lg:px-10">
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-10">
         {role === "teacher" && (
           <TeacherProfile user={user} teacher={userRole} navigate={navigate} />
         )}
@@ -952,18 +995,18 @@ export default function ProfilePage() {
       {/* AI Chatbot Button */}
       <button
         onClick={() => navigate?.("/chatbot")}
-        className="fixed bottom-6 right-6 z-50 group"
+        className="fixed bottom-4 right-4 z-50 group sm:bottom-6 sm:right-6"
       >
         <div className="relative">
           <span className="absolute inset-0 rounded-full bg-violet-500 animate-ping opacity-30"></span>
-          <div className="absolute right-20 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-xl border border-violet-100 bg-white px-4 py-2 shadow-lg opacity-0 invisible translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:visible group-hover:translate-x-0">
+          <div className="absolute right-[4.5rem] top-1/2 hidden -translate-y-1/2 whitespace-nowrap rounded-xl border border-violet-100 bg-white px-4 py-2 shadow-lg opacity-0 invisible translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:visible group-hover:translate-x-0 sm:block">
             <p className="text-sm font-semibold text-slate-800">
               Talk to AI Teacher
             </p>
             <p className="text-xs text-slate-500">Ask doubts anytime</p>
           </div>
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 shadow-xl transition-all duration-300 hover:scale-110">
-            <Brain className="h-8 w-8 text-amber-300" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 shadow-xl transition-all duration-300 hover:scale-110 sm:h-16 sm:w-16">
+            <Brain className="h-7 w-7 text-amber-300 sm:h-8 sm:w-8" />
           </div>
         </div>
       </button>
