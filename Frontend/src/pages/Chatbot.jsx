@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import api from "../services/axios";
 import {
   Send,
   BookOpen,
@@ -32,32 +35,6 @@ const suggestions = [
   },
 ];
 
-function getBotReply(input) {
-  const t = input.toLowerCase();
-
-  if (t.includes("math")) {
-    return "Let's solve it together. Send me the complete maths question.";
-  }
-
-  if (t.includes("physics")) {
-    return "I'd be happy to explain any physics concept. What topic are you studying?";
-  }
-
-  if (t.includes("chemistry")) {
-    return "Tell me the chemistry topic or equation you're struggling with.";
-  }
-
-  if (
-    t.includes("computer") ||
-    t.includes("coding") ||
-    t.includes("programming")
-  ) {
-    return "I can help with coding, debugging, DSA, React, Node.js, and more.";
-  }
-
-  return "I understand. Could you provide a little more detail so I can help you better?";
-}
-
 export default function TutorMateAI() {
   const [messages, setMessages] = useState([]);
   const navigate = useNavigate();
@@ -73,11 +50,12 @@ export default function TutorMateAI() {
     }
   }, [messages, typing]);
 
-  const sendMessage = (text) => {
+  const sendMessage = async (text) => {
     const trimmed = text.trim();
 
     if (!trimmed || typing) return;
 
+    // Add user's message
     setMessages((prev) => [
       ...prev,
       {
@@ -90,7 +68,16 @@ export default function TutorMateAI() {
     setInput("");
     setTyping(true);
 
-    setTimeout(() => {
+    try {
+      const history = messages.map((msg) => ({
+        role: msg.from === "user" ? "user" : "assistant",
+        content: msg.text,
+      }));
+      const res = await api.post("user/chat", {
+        message: trimmed,
+        history,
+      });
+
       setTyping(false);
 
       setMessages((prev) => [
@@ -98,10 +85,23 @@ export default function TutorMateAI() {
         {
           id: idRef.current++,
           from: "bot",
-          text: getBotReply(trimmed),
+          text: res.data.reply,
         },
       ]);
-    }, 1000);
+    } catch (err) {
+      setTyping(false);
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: idRef.current++,
+          from: "bot",
+          text: "Sorry, something went wrong.",
+        },
+      ]);
+
+      console.error(err);
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -117,8 +117,10 @@ export default function TutorMateAI() {
         {/* Header */}
         <header className="border-b border-slate-200 bg-white/90 backdrop-blur flex justify-center">
           <div className="flex items-center gap-4 px-6 py-5">
-            <div onClick={()=>navigate("/")}  
-            className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 shadow-lg">
+            <div
+              onClick={() => navigate("/")}
+              className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 shadow-lg"
+            >
               <BookOpen className="h-7 w-7 text-amber-300" />
             </div>
 
@@ -147,8 +149,8 @@ export default function TutorMateAI() {
               </h1>
 
               <p className="mt-5 max-w-2xl text-lg leading-relaxed text-slate-500">
-                Get instant help with homework, assignments, concepts,
-                exam preparation, coding questions, and finding tutors.
+                Get instant help with homework, assignments, concepts, exam
+                preparation, coding questions, and finding tutors.
               </p>
 
               <div className="mt-12 grid w-full max-w-4xl gap-4 sm:grid-cols-2">
@@ -182,33 +184,31 @@ export default function TutorMateAI() {
               </div>
             </div>
           ) : (
-            <div
-              ref={scrollRef}
-              className="h-full overflow-y-auto px-6 py-8"
-            >
+            <div ref={scrollRef} className="h-full overflow-y-auto px-8 py-8">
               <div className="mx-auto max-w-4xl space-y-6">
                 {messages.map((message) => (
                   <div
                     key={message.id}
                     className={`flex ${
-                      message.from === "user"
-                        ? "justify-end"
-                        : "justify-start"
+                      message.from === "user" ? "justify-end" : "justify-start"
                     }`}
                   >
                     <div
                       className={
                         message.from === "user"
-                          ? "max-w-[75%] rounded-3xl rounded-br-lg px-5 py-4 text-white shadow-lg"
-                          : "max-w-[75%] rounded-3xl rounded-bl-lg border border-slate-100 bg-white px-5 py-4 text-slate-700 shadow-sm"
-                      }
-                      style={
-                        message.from === "user"
-                          ? { backgroundColor: PURPLE }
-                          : {}
+                          ? " animate-message flex relative max-w-[75%] rounded-3xl rounded-br-md justify-end  bg-violet-600 px-5 py-4 text-white shadow-lg after:absolute after:-right-2 after:bottom-3 after:h-4 after:w-4 after:rotate-45 after:bg-violet-600"
+                          : "relative max-w-[85%] rounded-3xl rounded-bl-md border justify-start border-slate-200 bg-white px-5 py-4 shadow-sm after:absolute after:-left-2 after:bottom-3 after:h-4 after:w-4 after:rotate-45 after:border-l after:border-b after:border-slate-200 after:bg-white"
                       }
                     >
-                      {message.text}
+                      {message.from === "user" ? (
+                        <p className="whitespace-pre-wrap">{message.text}</p>
+                      ) : (
+                        <div className="prose prose-slate max-w-none">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {message.text}
+                          </ReactMarkdown>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

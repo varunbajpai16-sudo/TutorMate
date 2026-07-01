@@ -6,7 +6,13 @@ import uploadToCloudinary from '../utils/Cloudinary.util.js';
 import { Teacher } from '../models/teacher.models.js';
 import { Student } from '../models/student.models.js';
 import { Parent } from '../models/parent.models.js';
-import { json } from 'stream/consumers';
+import OpenAI from 'openai';
+import { systemPrompt } from '../system_prompt.js';
+
+const client = new OpenAI({
+  apiKey: process.env.GROQ_API_KEY,
+  baseURL: "https://api.groq.com/openai/v1",
+});
 
 const generateToken = async (userid) => {
   const user = await User.findById(userid);
@@ -280,41 +286,40 @@ const RegisterParent = AsyncHandler(async (req, res) => {
 
 const getNearbyTeachers = async (req, res) => {
   try {
-     
     const { latitude, longitude } = req.body || {};
-    console.log(latitude,longitude)
+    console.log(latitude, longitude);
     if (latitude == null || longitude == null) {
-      const teachers = await Teacher.find().populate("userid");
+      const teachers = await Teacher.find().populate('userid');
       return res
         .status(200)
         .json(new Apireponse(200, 'All Teachers', teachers));
     }
 
     const teachers = await Teacher.aggregate([
-  {
-    $geoNear: {
-      near: {
-        type: "Point",
-        coordinates: [Number(longitude), Number(latitude)],
+      {
+        $geoNear: {
+          near: {
+            type: 'Point',
+            coordinates: [Number(longitude), Number(latitude)],
+          },
+          distanceField: 'distance',
+          maxDistance: 10000, // 10 km
+          spherical: true,
+          key: 'coordinates',
+        },
       },
-      distanceField: "distance",
-      maxDistance: 10000, // 10 km
-      spherical: true,
-      key: "coordinates",
-    },
-  },
-  {
-    $lookup: {
-      from: "users", // MongoDB collection name
-      localField: "userid",
-      foreignField: "_id",
-      as: "userid",
-    },
-  },
-  {
-    $unwind: "$userid",
-  },
-]);
+      {
+        $lookup: {
+          from: 'users', // MongoDB collection name
+          localField: 'userid',
+          foreignField: '_id',
+          as: 'userid',
+        },
+      },
+      {
+        $unwind: '$userid',
+      },
+    ]);
 
     return res
       .status(200)
@@ -348,9 +353,39 @@ const GetRoledUser = AsyncHandler(async (req, res) => {
     .json(new Apireponse(200, 'Roled User Found', RoledUser));
 });
 
-const changeavatar = AsyncHandler(async(req,res)=>{
-  
-})
+const chatWithGrok = async (req, res) => {
+  try {
+   
+    const { message , history } = req.body;
+
+    const response = await client.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        {
+          role: 'system',
+          content:
+            systemPrompt,
+        },
+          ...history,
+        {
+          role: 'user',
+          content: message,
+        },
+      ],
+    });
+
+    res.json({
+      success: true,
+      reply: response.choices[0].message.content,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
 
 export {
   createUser,
@@ -360,4 +395,5 @@ export {
   RegisterParent,
   getNearbyTeachers,
   GetRoledUser,
+  chatWithGrok,
 };

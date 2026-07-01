@@ -6,7 +6,8 @@ import {
   studentRegistration,
   RegisterParent,
   getNearbyTeachers,
-  GetRoledUser
+  GetRoledUser,
+  chatWithGrok,
 } from '../controller/User.controller.js';
 import { upload } from '../middleware/Multer.middlewares.js';
 import { VerifyJwt } from '../middleware/Authentication.middlewares.js';
@@ -19,4 +20,5 @@ router.post('/registerstudent', VerifyJwt, studentRegistration);
 router.post('/registerparent', VerifyJwt, RegisterParent);
 router.post("/getteacher",getNearbyTeachers)
 router.get("/roleduser",VerifyJwt,GetRoledUser)
+router.post("/chat", chatWithGrok);
 export default router;
