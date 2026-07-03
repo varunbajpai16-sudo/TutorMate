@@ -14,6 +14,7 @@ import RoleSelectionPage from "./pages/RoleChoose"
 import RegisterStudentPage from "./pages/RegisterStudent"
 import RegisterParentPage from "./pages/RegisterParent"
 import ProfilePage from "./pages/UserProfile"
+import ComingSoon from "./pages/CommingSoon"
 function App() {
   return (
     <>
@@ -31,6 +32,7 @@ function App() {
         <Route path="/student" element={< RegisterStudentPage/>} />
          <Route path="/parent" element={< RegisterParentPage/>} />
           <Route path="/profile" element={< ProfilePage/>} />
+           <Route path="/comingsoon" element={< ComingSoon />} />
       </Routes>
     </>
   );

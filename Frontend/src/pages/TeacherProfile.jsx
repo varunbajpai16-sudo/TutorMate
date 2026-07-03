@@ -329,10 +329,11 @@ export default function TeacherProfile() {
               </div>
 
               <div className="flex gap-3">
-                <button className="flex items-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                <button onClick={()=>navigate("/comingsoon")} className="flex items-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
                   <MessageCircle className="h-4 w-4" /> Message
                 </button>
                 <button
+                  onClick={()=>navigate("/comingsoon")}
                   className="flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white"
                   style={{ backgroundColor: PURPLE }}
                 >
@@ -527,10 +528,11 @@ export default function TeacherProfile() {
               <button
                 className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white"
                 style={{ backgroundColor: PURPLE }}
+                onClick={()=>navigate("/comingsoon")}
               >
                 <CalendarCheck className="h-4 w-4" /> Book a Session
               </button>
-              <button className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+              <button onClick={()=>navigate("/comingsoon")} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
                 <MessageCircle className="h-4 w-4" /> Message Teacher
               </button>
 
