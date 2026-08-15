@@ -1,0 +1,62 @@
+<svg
+  width="44"
+  height="44"
+  viewBox="0 0 44 44"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <defs>
+    <linearGradient
+      id="bookGradient"
+      x1="0"
+      y1="0"
+      x2="44"
+      y2="44"
+      gradientUnits="userSpaceOnUse"
+    >
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="50%" stop-color="#9333ea"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow
+        dx="0"
+        dy="2"
+        stdDeviation="2"
+        flood-opacity="0.3"
+      />
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect
+    x="1"
+    y="1"
+    width="42"
+    height="42"
+    rx="11"
+    fill="url(#bookGradient)"
+    filter="url(#shadow)"
+  />
+
+  <!-- BookOpen icon -->
+  <path
+    d="M22 13.5C19.5 11.5 16.5 10.5 13 10.5H10.5V30H13
+       C16.5 30 19.5 31 22 33
+       C24.5 31 27.5 30 31 30H33.5V10.5H31
+       C27.5 10.5 24.5 11.5 22 13.5Z"
+    stroke="#fde68a"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- Center spine -->
+  <path
+    d="M22 13.5V33"
+    stroke="#fde68a"
+    stroke-width="2"
+    stroke-linecap="round"
+  />
+</svg>
