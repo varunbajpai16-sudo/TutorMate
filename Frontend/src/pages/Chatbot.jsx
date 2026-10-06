@@ -6,7 +6,6 @@ import api from "../services/axios";
 import {
   Send,
   BookOpen,
-  Sparkles,
   Calculator,
   Atom,
   FlaskConical,
@@ -37,16 +36,20 @@ const suggestions = [
 
 export default function TutorMateAI() {
   const [messages, setMessages] = useState([]);
-  const navigate = useNavigate();
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
 
+  const navigate = useNavigate();
   const scrollRef = useRef(null);
   const idRef = useRef(1);
 
+  // Auto scroll
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: "smooth",
+      });
     }
   }, [messages, typing]);
 
@@ -55,30 +58,27 @@ export default function TutorMateAI() {
 
     if (!trimmed || typing) return;
 
-    // Add user's message
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: idRef.current++,
-        from: "user",
-        text: trimmed,
-      },
-    ]);
+    const userMessage = {
+      id: idRef.current++,
+      from: "user",
+      text: trimmed,
+    };
 
+    // Save history BEFORE adding the current message
+    const history = messages.map((msg) => ({
+      role: msg.from === "user" ? "user" : "assistant",
+      content: msg.text,
+    }));
+
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setTyping(true);
 
     try {
-      const history = messages.map((msg) => ({
-        role: msg.from === "user" ? "user" : "assistant",
-        content: msg.text,
-      }));
       const res = await api.post("user/chat", {
         message: trimmed,
         history,
       });
-
-      setTyping(false);
 
       setMessages((prev) => [
         ...prev,
@@ -89,178 +89,274 @@ export default function TutorMateAI() {
         },
       ]);
     } catch (err) {
-      setTyping(false);
+      console.error(err);
 
       setMessages((prev) => [
         ...prev,
         {
           id: idRef.current++,
           from: "bot",
-          text: "Sorry, something went wrong.",
+          text: "Sorry, something went wrong. Please try again.",
         },
       ]);
-
-      console.error(err);
+    } finally {
+      setTyping(false);
     }
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage(input);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50">
-      <div className="flex h-screen flex-col">
-        {/* Header */}
-        <header className="border-b border-slate-200 bg-white/90 backdrop-blur flex justify-center">
-          <div className="flex items-center gap-4 px-6 py-5">
-            <div
-              onClick={() => navigate("/")}
-              className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 shadow-lg"
-            >
-              <BookOpen className="h-7 w-7 text-amber-300" />
-            </div>
+    <div className="h-[100dvh] overflow-hidden bg-slate-50">
+      <div className="flex h-full flex-col">
 
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">
+        {/* ================= HEADER ================= */}
+        <header className="shrink-0 border-b border-slate-200 bg-white/95 backdrop-blur">
+          <div className="mx-auto flex w-full max-w-5xl items-center px-4 py-3 sm:px-6 sm:py-4">
+
+            <button
+              onClick={() => navigate("/")}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 shadow-md transition hover:scale-105 sm:h-12 sm:w-12 sm:rounded-2xl"
+            >
+              <BookOpen className="h-5 w-5 text-amber-300 sm:h-6 sm:w-6" />
+            </button>
+
+            <div className="ml-3 min-w-0 sm:ml-4">
+              <h1 className="truncate text-base font-bold text-slate-900 sm:text-xl">
                 TutorMate AI Teacher
               </h1>
 
-              <p className="text-sm text-slate-500">
+              <p className="truncate text-xs text-slate-500 sm:text-sm">
                 Your personal learning assistant
               </p>
             </div>
+
           </div>
         </header>
 
-        {/* Main Chat Area */}
-        <div className="flex-1 overflow-hidden">
+        {/* ================= MAIN ================= */}
+        <main className="min-h-0 flex-1">
+
           {messages.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-              <div className="mb-8 flex h-28 w-28 items-center justify-center rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 shadow-xl">
-                <BookOpen className="h-14 w-14 text-amber-300" />
-              </div>
 
-              <h1 className="text-5xl font-extrabold tracking-tight text-slate-900">
-                TutorMate AI
-              </h1>
+            /* ================= EMPTY STATE ================= */
+            <div className="flex h-full overflow-y-auto px-4 py-8 sm:px-6 sm:py-12">
 
-              <p className="mt-5 max-w-2xl text-lg leading-relaxed text-slate-500">
-                Get instant help with homework, assignments, concepts, exam
-                preparation, coding questions, and finding tutors.
-              </p>
+              <div className="m-auto w-full max-w-4xl text-center">
 
-              <div className="mt-12 grid w-full max-w-4xl gap-4 sm:grid-cols-2">
-                {suggestions.map((item) => {
-                  const Icon = item.icon;
+                <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 shadow-xl sm:mb-7 sm:h-28 sm:w-28">
+                  <BookOpen className="h-9 w-9 text-amber-300 sm:h-14 sm:w-14" />
+                </div>
 
-                  return (
-                    <button
-                      key={item.title}
-                      onClick={() => sendMessage(item.title)}
-                      className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition-all hover:-translate-y-1 hover:border-violet-200 hover:shadow-lg"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-100">
-                          <Icon className="h-6 w-6 text-violet-600" />
+                <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
+                  TutorMate AI
+                </h1>
+
+                <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:mt-5 sm:text-lg sm:leading-relaxed">
+                  Get instant help with homework, assignments, concepts,
+                  exam preparation, coding questions, and finding tutors.
+                </p>
+
+                {/* Suggestions */}
+                <div className="mx-auto mt-8 grid w-full max-w-3xl grid-cols-1 gap-3 sm:mt-12 sm:grid-cols-2 sm:gap-4">
+
+                  {suggestions.map((item) => {
+                    const Icon = item.icon;
+
+                    return (
+                      <button
+                        key={item.title}
+                        onClick={() => sendMessage(item.title)}
+                        className="group flex items-center rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-violet-200 hover:shadow-md active:scale-[0.98] sm:p-5"
+                      >
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-100 sm:h-12 sm:w-12">
+                          <Icon className="h-5 w-5 text-violet-600 sm:h-6 sm:w-6" />
                         </div>
 
-                        <div>
-                          <h3 className="font-semibold text-slate-900">
+                        <div className="ml-3 min-w-0 sm:ml-4">
+                          <h3 className="truncate text-sm font-semibold text-slate-900 sm:text-base">
                             {item.title}
                           </h3>
 
-                          <p className="mt-1 text-sm text-slate-500">
+                          <p className="mt-1 text-xs text-slate-500 sm:text-sm">
                             Start a conversation
                           </p>
                         </div>
-                      </div>
-                    </button>
-                  );
-                })}
+                      </button>
+                    );
+                  })}
+
+                </div>
               </div>
             </div>
-          ) : (
-            <div ref={scrollRef} className="h-full overflow-y-auto px-8 py-8">
-              <div className="mx-auto max-w-4xl space-y-6">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${
-                      message.from === "user" ? "justify-end" : "justify-start"
-                    }`}
-                  >
-                    <div
-                      className={
-                        message.from === "user"
-                          ? " animate-message flex relative max-w-[75%] rounded-3xl rounded-br-md justify-end  bg-violet-600 px-5 py-4 text-white shadow-lg after:absolute after:-right-2 after:bottom-3 after:h-4 after:w-4 after:rotate-45 after:bg-violet-600"
-                          : "relative max-w-[85%] rounded-3xl rounded-bl-md border justify-start border-slate-200 bg-white px-5 py-4 shadow-sm after:absolute after:-left-2 after:bottom-3 after:h-4 after:w-4 after:rotate-45 after:border-l after:border-b after:border-slate-200 after:bg-white"
-                      }
-                    >
-                      {message.from === "user" ? (
-                        <p className="whitespace-pre-wrap">{message.text}</p>
-                      ) : (
-                        <div className="prose prose-slate max-w-none">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                            {message.text}
-                          </ReactMarkdown>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
 
+          ) : (
+
+            /* ================= CHAT ================= */
+            <div
+              ref={scrollRef}
+              className="h-full overflow-y-auto overscroll-contain px-3 py-5 sm:px-6 sm:py-8"
+            >
+
+              <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 sm:gap-6">
+
+                {messages.map((message) => {
+
+                  const isUser = message.from === "user";
+
+                  return (
+                    <div
+                      key={message.id}
+                      className={`flex w-full ${
+                        isUser ? "justify-end" : "justify-start"
+                      }`}
+                    >
+
+                      <div
+                        className={
+                          isUser
+                            ? `
+                              relative
+                              max-w-[88%]
+                              rounded-2xl
+                              rounded-br-md
+                              bg-violet-600
+                              px-4
+                              py-3
+                              text-[15px]
+                              leading-6
+                              text-white
+                              shadow-sm
+                              sm:max-w-[75%]
+                              sm:rounded-3xl
+                              sm:px-5
+                              sm:py-4
+                            `
+                            : `
+                              relative
+                              w-fit
+                              max-w-[94%]
+                              rounded-2xl
+                              rounded-bl-md
+                              border
+                              border-slate-200
+                              bg-white
+                              px-4
+                              py-3
+                              text-[15px]
+                              leading-6
+                              text-slate-800
+                              shadow-sm
+                              sm:max-w-[85%]
+                              sm:rounded-3xl
+                              sm:px-5
+                              sm:py-4
+                            `
+                        }
+                      >
+
+                        {isUser ? (
+
+                          <p className="whitespace-pre-wrap break-words">
+                            {message.text}
+                          </p>
+
+                        ) : (
+
+                          <div className="tutor-markdown prose prose-sm max-w-none break-words prose-headings:mb-2 prose-headings:mt-4 prose-p:my-2 prose-p:leading-6 prose-ul:my-2 prose-ol:my-2 prose-li:my-1 prose-pre:my-3 prose-pre:overflow-x-auto prose-code:break-words sm:prose-base">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                            >
+                              {message.text}
+                            </ReactMarkdown>
+                          </div>
+
+                        )}
+
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Typing */}
                 {typing && (
                   <div className="flex justify-start">
-                    <div className="rounded-3xl rounded-bl-lg border border-slate-100 bg-white px-5 py-4 shadow-sm">
-                      <div className="flex gap-1">
+
+                    <div className="rounded-2xl rounded-bl-md border border-slate-200 bg-white px-4 py-3 shadow-sm sm:rounded-3xl sm:px-5 sm:py-4">
+
+                      <div className="flex items-center gap-1.5">
                         <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400" />
+
                         <span
                           className="h-2 w-2 animate-bounce rounded-full bg-slate-400"
                           style={{ animationDelay: "150ms" }}
                         />
+
                         <span
                           className="h-2 w-2 animate-bounce rounded-full bg-slate-400"
                           style={{ animationDelay: "300ms" }}
                         />
                       </div>
+
                     </div>
                   </div>
                 )}
+
               </div>
             </div>
           )}
-        </div>
+        </main>
 
-        {/* Input */}
-        <div className="border-t border-slate-200 bg-white p-5">
-          <div className="mx-auto flex max-w-4xl gap-3">
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask anything..."
-              className="flex-1 rounded-2xl border border-slate-200 px-5 py-4 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
-            />
+        {/* ================= INPUT ================= */}
+        <div className="shrink-0 border-t border-slate-200 bg-white/95 px-3 py-3 backdrop-blur sm:px-5 sm:py-4">
+
+          <div className="mx-auto flex w-full max-w-4xl items-center gap-2 sm:gap-3">
+
+            <div className="flex min-w-0 flex-1 items-center rounded-2xl border border-slate-200 bg-slate-50 px-3 transition focus-within:border-violet-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-violet-100 sm:px-4">
+
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={typing}
+                placeholder="Ask anything..."
+                className="min-w-0 flex-1 bg-transparent px-1 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed sm:py-4 sm:text-base"
+              />
+
+            </div>
 
             <button
               onClick={() => sendMessage(input)}
-              className="flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-lg transition-all hover:scale-105"
-              style={{ backgroundColor: PURPLE }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = PURPLE_DARK)
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = PURPLE)
-              }
+              disabled={!input.trim() || typing}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-md transition-all duration-200 hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100 sm:h-14 sm:w-14"
+              style={{
+                backgroundColor: PURPLE,
+              }}
+              onMouseEnter={(e) => {
+                if (!e.currentTarget.disabled) {
+                  e.currentTarget.style.backgroundColor = PURPLE_DARK;
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = PURPLE;
+              }}
             >
               <Send className="h-5 w-5" />
             </button>
+
           </div>
+
+          <p className="mt-2 hidden text-center text-[11px] text-slate-400 sm:block">
+            Press Enter to send
+          </p>
+
         </div>
+
       </div>
     </div>
   );
