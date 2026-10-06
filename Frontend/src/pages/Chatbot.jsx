@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import api from "../services/axios";
 import {
   Send,
@@ -58,19 +59,22 @@ export default function TutorMateAI() {
 
     if (!trimmed || typing) return;
 
-    const userMessage = {
-      id: idRef.current++,
-      from: "user",
-      text: trimmed,
-    };
-
-    // Save history BEFORE adding the current message
+    // History BEFORE current message
     const history = messages.map((msg) => ({
       role: msg.from === "user" ? "user" : "assistant",
       content: msg.text,
     }));
 
-    setMessages((prev) => [...prev, userMessage]);
+    // Add user message
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: idRef.current++,
+        from: "user",
+        text: trimmed,
+      },
+    ]);
+
     setInput("");
     setTyping(true);
 
@@ -115,7 +119,9 @@ export default function TutorMateAI() {
     <div className="h-[100dvh] overflow-hidden bg-slate-50">
       <div className="flex h-full flex-col">
 
-        {/* ================= HEADER ================= */}
+        {/* =====================================================
+            HEADER
+        ====================================================== */}
         <header className="shrink-0 border-b border-slate-200 bg-white/95 backdrop-blur">
           <div className="mx-auto flex w-full max-w-5xl items-center px-4 py-3 sm:px-6 sm:py-4">
 
@@ -139,12 +145,15 @@ export default function TutorMateAI() {
           </div>
         </header>
 
-        {/* ================= MAIN ================= */}
+        {/* =====================================================
+            MAIN CHAT
+        ====================================================== */}
         <main className="min-h-0 flex-1">
 
+          {/* ===================================================
+              EMPTY STATE
+          ==================================================== */}
           {messages.length === 0 ? (
-
-            /* ================= EMPTY STATE ================= */
             <div className="flex h-full overflow-y-auto px-4 py-8 sm:px-6 sm:py-12">
 
               <div className="m-auto w-full max-w-4xl text-center">
@@ -194,101 +203,340 @@ export default function TutorMateAI() {
                 </div>
               </div>
             </div>
-
           ) : (
 
-            /* ================= CHAT ================= */
+            /* ===================================================
+                CHAT MESSAGES
+            ==================================================== */
             <div
               ref={scrollRef}
-              className="h-full overflow-y-auto overscroll-contain px-3 py-5 sm:px-6 sm:py-8"
+              className="
+                h-full
+                min-w-0
+                overflow-y-auto
+                overscroll-contain
+                px-3
+                py-5
+                sm:px-6
+                sm:py-8
+              "
             >
 
-              <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 sm:gap-6">
+              <div
+                className="
+                  mx-auto
+                  flex
+                  min-w-0
+                  w-full
+                  max-w-4xl
+                  flex-col
+                  gap-4
+                  sm:gap-6
+                "
+              >
 
                 {messages.map((message) => {
-
                   const isUser = message.from === "user";
 
                   return (
                     <div
                       key={message.id}
-                      className={`flex w-full ${
+                      className={`flex min-w-0 w-full ${
                         isUser ? "justify-end" : "justify-start"
                       }`}
                     >
 
-                      <div
-                        className={
-                          isUser
-                            ? `
-                              relative
-                              max-w-[88%]
-                              rounded-2xl
-                              rounded-br-md
-                              bg-violet-600
-                              px-4
-                              py-3
-                              text-[15px]
-                              leading-6
-                              text-white
-                              shadow-sm
-                              sm:max-w-[75%]
-                              sm:rounded-3xl
-                              sm:px-5
-                              sm:py-4
-                            `
-                            : `
-                              relative
-                              w-fit
-                              max-w-[94%]
-                              rounded-2xl
-                              rounded-bl-md
-                              border
-                              border-slate-200
-                              bg-white
-                              px-4
-                              py-3
-                              text-[15px]
-                              leading-6
-                              text-slate-800
-                              shadow-sm
-                              sm:max-w-[85%]
-                              sm:rounded-3xl
-                              sm:px-5
-                              sm:py-4
-                            `
-                        }
-                      >
-
-                        {isUser ? (
-
+                      {/* =================================================
+                          USER MESSAGE
+                      ================================================== */}
+                      {isUser ? (
+                        <div
+                          className="
+                            relative
+                            min-w-0
+                            max-w-[88%]
+                            break-words
+                            rounded-2xl
+                            rounded-br-md
+                            bg-violet-600
+                            px-4
+                            py-3
+                            text-[15px]
+                            leading-6
+                            text-white
+                            shadow-sm
+                            sm:max-w-[75%]
+                            sm:rounded-3xl
+                            sm:px-5
+                            sm:py-4
+                          "
+                        >
                           <p className="whitespace-pre-wrap break-words">
                             {message.text}
                           </p>
+                        </div>
+                      ) : (
 
-                        ) : (
+                        /* =================================================
+                            AI MESSAGE
+                        ================================================== */
+                        <div
+                          className="
+                            relative
+                            min-w-0
+                            w-full
+                            max-w-full
+                            overflow-hidden
+                            rounded-2xl
+                            rounded-bl-md
+                            border
+                            border-slate-200
+                            bg-white
+                            px-4
+                            py-3
+                            shadow-sm
+                            sm:max-w-[85%]
+                            sm:rounded-3xl
+                            sm:px-5
+                            sm:py-4
+                          "
+                        >
 
-                          <div className="tutor-markdown prose prose-sm max-w-none break-words prose-headings:mb-2 prose-headings:mt-4 prose-p:my-2 prose-p:leading-6 prose-ul:my-2 prose-ol:my-2 prose-li:my-1 prose-pre:my-3 prose-pre:overflow-x-auto prose-code:break-words sm:prose-base">
+                          <div
+                            className="
+                              min-w-0
+                              w-full
+                              max-w-full
+                              break-words
+                              text-[15px]
+                              leading-6
+                              text-slate-800
+                            "
+                          >
+
                             <ReactMarkdown
                               remarkPlugins={[remarkGfm]}
+                              rehypePlugins={[rehypeRaw]}
+                              components={{
+
+                                /* ===========================
+                                   PARAGRAPH
+                                ============================ */
+                                p: ({ children }) => (
+                                  <p className="my-2 break-words">
+                                    {children}
+                                  </p>
+                                ),
+
+                                /* ===========================
+                                   HEADINGS
+                                ============================ */
+                                h1: ({ children }) => (
+                                  <h1 className="mb-3 mt-5 break-words text-xl font-bold text-slate-900">
+                                    {children}
+                                  </h1>
+                                ),
+
+                                h2: ({ children }) => (
+                                  <h2 className="mb-3 mt-5 break-words text-lg font-bold text-slate-900">
+                                    {children}
+                                  </h2>
+                                ),
+
+                                h3: ({ children }) => (
+                                  <h3 className="mb-2 mt-4 break-words text-base font-bold text-slate-900">
+                                    {children}
+                                  </h3>
+                                ),
+
+                                /* ===========================
+                                   LISTS
+                                ============================ */
+                                ul: ({ children }) => (
+                                  <ul className="my-3 list-disc space-y-1 pl-5 break-words">
+                                    {children}
+                                  </ul>
+                                ),
+
+                                ol: ({ children }) => (
+                                  <ol className="my-3 list-decimal space-y-1 pl-5 break-words">
+                                    {children}
+                                  </ol>
+                                ),
+
+                                li: ({ children }) => (
+                                  <li className="break-words">
+                                    {children}
+                                  </li>
+                                ),
+
+                                /* ===========================
+                                   TABLE
+                                ============================ */
+                                table: ({ children }) => (
+                                  <div className="my-4 w-full max-w-full overflow-x-auto rounded-xl border border-slate-200">
+                                    <table className="w-full min-w-[600px] border-collapse text-sm">
+                                      {children}
+                                    </table>
+                                  </div>
+                                ),
+
+                                thead: ({ children }) => (
+                                  <thead className="bg-slate-50">
+                                    {children}
+                                  </thead>
+                                ),
+
+                                tbody: ({ children }) => (
+                                  <tbody>{children}</tbody>
+                                ),
+
+                                tr: ({ children }) => (
+                                  <tr className="border-b border-slate-100 last:border-0">
+                                    {children}
+                                  </tr>
+                                ),
+
+                                th: ({ children }) => (
+                                  <th className="whitespace-normal break-words border-b border-slate-200 px-3 py-2 text-left font-semibold text-slate-800">
+                                    {children}
+                                  </th>
+                                ),
+
+                                td: ({ children }) => (
+                                  <td className="whitespace-normal break-words px-3 py-2 align-top text-slate-700">
+                                    {children}
+                                  </td>
+                                ),
+
+                                /* ===========================
+                                   CODE BLOCK
+                                ============================ */
+                                pre: ({ children }) => (
+                                  <pre
+                                    className="
+                                      my-4
+                                      max-w-full
+                                      overflow-x-auto
+                                      rounded-xl
+                                      bg-slate-900
+                                      p-4
+                                      text-sm
+                                      leading-6
+                                      text-slate-100
+                                    "
+                                  >
+                                    {children}
+                                  </pre>
+                                ),
+
+                                code: ({
+                                  inline,
+                                  children,
+                                  ...props
+                                }) => {
+                                  if (inline) {
+                                    return (
+                                      <code
+                                        {...props}
+                                        className="
+                                          break-words
+                                          rounded
+                                          bg-slate-100
+                                          px-1.5
+                                          py-0.5
+                                          text-[13px]
+                                          text-violet-700
+                                        "
+                                      >
+                                        {children}
+                                      </code>
+                                    );
+                                  }
+
+                                  return (
+                                    <code
+                                      {...props}
+                                      className="whitespace-pre"
+                                    >
+                                      {children}
+                                    </code>
+                                  );
+                                },
+
+                                /* ===========================
+                                   LINKS
+                                ============================ */
+                                a: ({ children, href }) => (
+                                  <a
+                                    href={href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="break-all text-violet-600 hover:underline"
+                                  >
+                                    {children}
+                                  </a>
+                                ),
+
+                                /* ===========================
+                                   IMAGES
+                                ============================ */
+                                img: ({ src, alt }) => (
+                                  <img
+                                    src={src}
+                                    alt={alt || ""}
+                                    className="my-3 h-auto max-w-full rounded-xl"
+                                  />
+                                ),
+
+                                /* ===========================
+                                   BLOCKQUOTE
+                                ============================ */
+                                blockquote: ({ children }) => (
+                                  <blockquote className="my-3 border-l-4 border-violet-300 bg-violet-50 px-4 py-2 text-slate-600">
+                                    {children}
+                                  </blockquote>
+                                ),
+
+                                /* ===========================
+                                   HORIZONTAL RULE
+                                ============================ */
+                                hr: () => (
+                                  <hr className="my-4 border-slate-200" />
+                                ),
+                              }}
                             >
                               {message.text}
                             </ReactMarkdown>
+
                           </div>
-
-                        )}
-
-                      </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
 
-                {/* Typing */}
+                {/* =================================================
+                    TYPING INDICATOR
+                ================================================== */}
                 {typing && (
                   <div className="flex justify-start">
 
-                    <div className="rounded-2xl rounded-bl-md border border-slate-200 bg-white px-4 py-3 shadow-sm sm:rounded-3xl sm:px-5 sm:py-4">
-
+                    <div
+                      className="
+                        rounded-2xl
+                        rounded-bl-md
+                        border
+                        border-slate-200
+                        bg-white
+                        px-4
+                        py-3
+                        shadow-sm
+                        sm:rounded-3xl
+                        sm:px-5
+                        sm:py-4
+                      "
+                    >
                       <div className="flex items-center gap-1.5">
                         <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400" />
 
@@ -302,8 +550,8 @@ export default function TutorMateAI() {
                           style={{ animationDelay: "300ms" }}
                         />
                       </div>
-
                     </div>
+
                   </div>
                 )}
 
@@ -312,12 +560,54 @@ export default function TutorMateAI() {
           )}
         </main>
 
-        {/* ================= INPUT ================= */}
-        <div className="shrink-0 border-t border-slate-200 bg-white/95 px-3 py-3 backdrop-blur sm:px-5 sm:py-4">
+        {/* =====================================================
+            INPUT
+        ====================================================== */}
+        <div
+          className="
+            shrink-0
+            border-t
+            border-slate-200
+            bg-white/95
+            px-3
+            py-3
+            backdrop-blur
+            sm:px-5
+            sm:py-4
+          "
+        >
 
-          <div className="mx-auto flex w-full max-w-4xl items-center gap-2 sm:gap-3">
+          <div
+            className="
+              mx-auto
+              flex
+              w-full
+              max-w-4xl
+              items-center
+              gap-2
+              sm:gap-3
+            "
+          >
 
-            <div className="flex min-w-0 flex-1 items-center rounded-2xl border border-slate-200 bg-slate-50 px-3 transition focus-within:border-violet-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-violet-100 sm:px-4">
+            <div
+              className="
+                flex
+                min-w-0
+                flex-1
+                items-center
+                rounded-2xl
+                border
+                border-slate-200
+                bg-slate-50
+                px-3
+                transition
+                focus-within:border-violet-300
+                focus-within:bg-white
+                focus-within:ring-4
+                focus-within:ring-violet-100
+                sm:px-4
+              "
+            >
 
               <input
                 value={input}
@@ -325,7 +615,20 @@ export default function TutorMateAI() {
                 onKeyDown={handleKeyDown}
                 disabled={typing}
                 placeholder="Ask anything..."
-                className="min-w-0 flex-1 bg-transparent px-1 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed sm:py-4 sm:text-base"
+                className="
+                  min-w-0
+                  flex-1
+                  bg-transparent
+                  px-1
+                  py-3
+                  text-sm
+                  text-slate-900
+                  outline-none
+                  placeholder:text-slate-400
+                  disabled:cursor-not-allowed
+                  sm:py-4
+                  sm:text-base
+                "
               />
 
             </div>
@@ -333,7 +636,26 @@ export default function TutorMateAI() {
             <button
               onClick={() => sendMessage(input)}
               disabled={!input.trim() || typing}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-md transition-all duration-200 hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100 sm:h-14 sm:w-14"
+              className="
+                flex
+                h-12
+                w-12
+                shrink-0
+                items-center
+                justify-center
+                rounded-2xl
+                text-white
+                shadow-md
+                transition-all
+                duration-200
+                hover:scale-105
+                active:scale-95
+                disabled:cursor-not-allowed
+                disabled:opacity-50
+                disabled:hover:scale-100
+                sm:h-14
+                sm:w-14
+              "
               style={{
                 backgroundColor: PURPLE,
               }}
@@ -356,7 +678,6 @@ export default function TutorMateAI() {
           </p>
 
         </div>
-
       </div>
     </div>
   );
