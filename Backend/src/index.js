@@ -18,5 +18,4 @@ connectToDatabase()
     console.error('Failed to connect to database. Server not started.', error);
   });
 
-  const teacher = await Teacher.find({userid:"6a4a0b7e2753a4b5dd37e890"})
-  console.log("Teacher:", teacher);
+  
